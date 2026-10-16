@@ -65,15 +65,17 @@ Otros comandos:
 
 Se leen de `backend/.env` (ver `backend/.env.example`). Al arrancar se validan y, si falta una obligatoria o tiene un valor inválido, el proceso termina indicando qué variable falla.
 
-| Variable              | Obligatoria | Valor por defecto       | Descripción                                                                     |
-| --------------------- | ----------- | ----------------------- | ------------------------------------------------------------------------------- |
-| `PORT`                | No          | `4000`                  | Puerto HTTP de la API                                                           |
-| `MONGODB_URI`         | Sí          | —                       | Cadena de conexión a MongoDB (`mongodb://localhost:27017/dashboard` con Docker) |
-| `JWT_SECRET`          | Sí          | —                       | Secreto para firmar los tokens JWT (mínimo 32 caracteres)                       |
-| `JWT_EXPIRES_IN`      | No          | `1d`                    | Vigencia de los tokens JWT                                                      |
-| `CORS_ORIGIN`         | No          | `http://localhost:5173` | Origen permitido del frontend                                                   |
-| `SEED_ADMIN_PASSWORD` | No          | —                       | Contraseña del usuario `ADMIN` creado por el seed                               |
-| `SEED_USER_PASSWORD`  | No          | —                       | Contraseña del usuario `USER` creado por el seed                                |
+| Variable                     | Obligatoria | Valor por defecto       | Descripción                                                                                         |
+| ---------------------------- | ----------- | ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `PORT`                       | No          | `4000`                  | Puerto HTTP de la API                                                                               |
+| `MONGODB_URI`                | Sí          | —                       | Cadena de conexión a MongoDB (`mongodb://localhost:27017/dashboard` con Docker)                     |
+| `JWT_SECRET`                 | Sí          | —                       | Secreto para firmar los tokens JWT (mínimo 32 caracteres)                                           |
+| `JWT_EXPIRES_IN`             | No          | `1d`                    | Vigencia de los tokens JWT: segundos (`3600`) o número con `s`, `m`, `h` o `d` (`15m`, `12h`, `1d`) |
+| `CORS_ORIGIN`                | No          | `http://localhost:5173` | Origen permitido del frontend                                                                       |
+| `SEED_ADMIN_PASSWORD`        | No          | —                       | Contraseña del usuario `ADMIN` creado por el seed                                                   |
+| `SEED_USER_PASSWORD`         | No          | —                       | Contraseña del usuario `USER` creado por el seed                                                    |
+| `LOGIN_RATE_LIMIT_WINDOW_MS` | No          | `900000`                | Ventana en milisegundos del límite de intentos de login (15 minutos)                                |
+| `LOGIN_RATE_LIMIT_MAX`       | No          | `10`                    | Intentos de login permitidos por IP en cada ventana                                                 |
 
 ## Credenciales de prueba
 
@@ -109,7 +111,7 @@ Authorization: Bearer <token>
 
 En cada petición la API vuelve a leer el usuario de la base de datos: si fue inactivado o eliminado después de emitir el token, la siguiente petición responde `401`, y si cambió su rol se aplica el rol nuevo.
 
-Errores: `400 VALIDATION_ERROR`, `401 INVALID_CREDENTIALS` (el mismo para email desconocido y contraseña incorrecta), `403 USER_INACTIVE` (credenciales correctas pero usuario inactivo), `401 UNAUTHENTICATED` (falta el token), `401 INVALID_TOKEN` (token inválido, expirado o de un usuario inactivo o inexistente) y `403 FORBIDDEN` (el rol no tiene permiso).
+Errores: `400 VALIDATION_ERROR`, `429 TOO_MANY_REQUESTS` (demasiados intentos de login desde la misma IP; ver `LOGIN_RATE_LIMIT_WINDOW_MS` y `LOGIN_RATE_LIMIT_MAX`), `401 INVALID_CREDENTIALS` (el mismo para email desconocido y contraseña incorrecta), `403 USER_INACTIVE` (credenciales correctas pero usuario inactivo), `401 UNAUTHENTICATED` (falta el token), `401 INVALID_TOKEN` (token inválido, expirado o de un usuario inactivo o inexistente) y `403 FORBIDDEN` (el rol no tiene permiso).
 
 ### Permisos
 

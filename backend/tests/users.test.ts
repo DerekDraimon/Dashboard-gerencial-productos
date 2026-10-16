@@ -121,7 +121,6 @@ describe('users module', () => {
     it.each([
       ['invalid email', { email: 'not-an-email' }, 'email'],
       ['short password', { password: 'short' }, 'password'],
-      ['password over 72 chars', { password: 'a'.repeat(73) }, 'password'],
       ['bad role', { role: 'ROOT' }, 'role'],
       ['empty name', { name: '   ' }, 'name'],
       ['name over 100 chars', { name: 'a'.repeat(101) }, 'name'],
@@ -150,7 +149,33 @@ describe('users module', () => {
       expect(res.status).toBe(201);
     });
 
-    it('accepts a 72-char password (boundary) and can log in with it', async () => {
+    it.each([
+      ['73 ASCII bytes', 'a'.repeat(73)],
+      ['19 four-byte emoji (76 bytes)', '\u{1F600}'.repeat(19)],
+    ])('rejects a password of %s as too long', async (_label, password) => {
+      const res = await api.post('/api/users').send({ ...validUser, password });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+      expect(res.body.error.details[0]).toEqual({
+        path: 'password',
+        message: 'password is too long: it must be at most 72 bytes',
+      });
+      expect(await countOthers()).toBe(0);
+    });
+
+    it('accepts 18 four-byte emoji (72 bytes, boundary) and can log in with them', async () => {
+      const password = '\u{1F600}'.repeat(18);
+      const created = await createUser({ password });
+
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: created.email, password });
+
+      expect(res.status).toBe(200);
+    });
+
+    it('accepts a 72-byte ASCII password (boundary) and can log in with it', async () => {
       const password = 'a'.repeat(72);
       const created = await createUser({ password });
 
