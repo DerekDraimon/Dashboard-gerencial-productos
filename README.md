@@ -161,9 +161,38 @@ La lista responde `{ data, meta: { total, offset, limit } }`. Reglas de los camp
 
 Errores principales: `400 VALIDATION_ERROR` (con `details: [{ path, message }]`, también si el body trae campos no permitidos), `400 INVALID_ID`, `404 PRODUCT_NOT_FOUND`, `401 UNAUTHENTICATED` / `401 INVALID_TOKEN` y `403 FORBIDDEN` (un `USER` intenta crear, actualizar o eliminar).
 
-## Colección de Postman
+## Probar con Postman
 
-_Pendiente._
+La carpeta `postman/` contiene la colección de la API y un entorno local:
+
+| Archivo                                               | Contenido                                                                                                   |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `postman/dashboard-gerencial.postman_collection.json` | Requests de todos los endpoints, ordenados en carpetas (`00 Health`, `01 Auth`, `02 Products`, `03 Users`)  |
+| `postman/local.postman_environment.json`              | Entorno "Local": `baseUrl` (`http://localhost:4000/api`), credenciales del seed y variables de la ejecución |
+
+Cada request comprueba el código de estado y la estructura de la respuesta. La colección es autosuficiente y se puede ejecutar varias veces: inicia sesión, guarda los tokens en el entorno, crea un producto con un payload de ejemplo, lo actualiza y lo elimina, y crea un usuario con un email único que termina inactivado. El login de `ADMIN` guarda `adminToken`, que la colección usa por defecto; las peticiones como `USER` usan `userToken`.
+
+Requisitos previos:
+
+1. MongoDB levantado (`npm run db:up`).
+2. Datos de prueba creados con `npm run seed`.
+3. La API en marcha en `http://localhost:4000` (`npm run dev:api`).
+
+Desde Postman:
+
+1. **Import** y selecciona los dos archivos de `postman/`.
+2. Elige el entorno **Local** en el selector de entornos.
+3. Ejecuta la colección completa con el **Runner**, en el orden en que viene (cada request usa variables que guardan los anteriores).
+
+Desde la terminal, con [Newman](https://github.com/postmanlabs/newman) (se descarga con `npx`, no es una dependencia del proyecto):
+
+```bash
+npm run test:api
+```
+
+Termina con código distinto de 0 si falla alguna comprobación.
+
+Cada ejecución hace 3 logins, que cuentan para el límite de intentos de login (10 cada 15 minutos por defecto). Para ejecutarla varias veces seguidas en local, sube `LOGIN_RATE_LIMIT_MAX` en `backend/.env` y reinicia la API.
 
 ## Convenciones
 
