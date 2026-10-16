@@ -9,11 +9,20 @@ import { bearer, createUserWithToken } from './helpers/auth.js';
 
 const app = createApp();
 
+let adminToken = '';
 let userToken = '';
 
-const user = () => ({
-  get: (path: string) => request(app).get(path).set('Authorization', bearer(userToken)),
-});
+function as(token: string) {
+  return {
+    get: (path: string) => request(app).get(path).set('Authorization', bearer(token)),
+    post: (path: string) => request(app).post(path).set('Authorization', bearer(token)),
+    patch: (path: string) => request(app).patch(path).set('Authorization', bearer(token)),
+    delete: (path: string) => request(app).delete(path).set('Authorization', bearer(token)),
+  };
+}
+
+const admin = () => as(adminToken);
+const user = () => as(userToken);
 
 const validProduct = {
   title: 'Wireless Mouse',
@@ -27,9 +36,18 @@ const validProduct = {
 const missingId = new mongoose.Types.ObjectId().toString();
 
 type ErrorDetail = { path: string; message: string };
+type ProductBody = { id: string; title: string; creationAt: string; updatedAt: string };
 
 function detailPaths(body: { error: { details?: ErrorDetail[] } }): string[] {
   return (body.error.details ?? []).map((detail) => detail.path);
+}
+
+async function createProduct(overrides: Record<string, unknown> = {}): Promise<ProductBody> {
+  const res = await admin()
+    .post('/api/products')
+    .send({ ...validProduct, ...overrides });
+  expect(res.status).toBe(201);
+  return res.body as ProductBody;
 }
 
 /** Inserts products with a fixed `creationAt`; `timestamps: false` keeps Mongoose from overwriting it. */
@@ -69,7 +87,116 @@ describe('products module', () => {
   beforeEach(async () => {
     await UserModel.deleteMany({});
     await ProductModel.deleteMany({});
+    ({ token: adminToken } = await createUserWithToken('ADMIN'));
     ({ token: userToken } = await createUserWithToken('USER'));
+  });
+
+  describe('POST /api/products', () => {
+    it('lets an ADMIN create a product with every field and persists it', async () => {
+      const res = await admin().post('/api/products').send(validProduct);
+
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual({
+        id: expect.any(String),
+        ...validProduct,
+        creationAt: expect.any(String),
+        updatedAt: expect.any(String),
+      });
+      expect(res.body).not.toHaveProperty('_id');
+      expect(res.body).not.toHaveProperty('__v');
+
+      const stored = await ProductModel.findById(res.body.id).lean();
+      expect(stored).toMatchObject(validProduct);
+      expect(stored?.creationAt).toBeInstanceOf(Date);
+    });
+
+    it('trims text fields and defaults images to an empty array', async () => {
+      const { images, ...withoutImages } = validProduct;
+      void images;
+
+      const res = await admin()
+        .post('/api/products')
+        .send({ ...withoutImages, title: '  Mouse  ', category: ' Electronics ' });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ title: 'Mouse', category: 'Electronics', images: [] });
+    });
+
+    it('answers 403 FORBIDDEN to a USER and stores nothing', async () => {
+      const res = await user().post('/api/products').send(validProduct);
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+      expect(await ProductModel.countDocuments()).toBe(0);
+    });
+
+    it('answers 401 UNAUTHENTICATED without a token', async () => {
+      const res = await request(app).post('/api/products').send(validProduct);
+
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('UNAUTHENTICATED');
+      expect(await ProductModel.countDocuments()).toBe(0);
+    });
+
+    it.each([
+      ['price 0', { price: 0 }, 'price'],
+      ['negative price', { price: -5 }, 'price'],
+      ['price with 3 decimals', { price: 10.999 }, 'price'],
+      ['price as a string', { price: '10' }, 'price'],
+      ['negative stock', { stock: -1 }, 'stock'],
+      ['fractional stock', { stock: 1.5 }, 'stock'],
+      ['invalid image URL', { images: ['not-a-url'] }, 'images.0'],
+      ['non-http image URL', { images: ['ftp://example.com/a.jpg'] }, 'images.0'],
+      [
+        '11 images',
+        { images: Array.from({ length: 11 }, (_v, i) => `https://example.com/${i}.jpg`) },
+        'images',
+      ],
+      ['empty title', { title: '   ' }, 'title'],
+      ['title over 120 chars', { title: 'a'.repeat(121) }, 'title'],
+      ['description over 2000 chars', { description: 'a'.repeat(2001) }, 'description'],
+      ['category over 60 chars', { category: 'a'.repeat(61) }, 'category'],
+      ['unknown field', { sku: 'X-1' }, ''],
+    ])('rejects %s with 400 VALIDATION_ERROR', async (_label, overrides, path) => {
+      const res = await admin()
+        .post('/api/products')
+        .send({ ...validProduct, ...overrides });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+      expect(detailPaths(res.body)).toContain(path);
+      expect(await ProductModel.countDocuments()).toBe(0);
+    });
+
+    it.each(['title', 'description', 'price', 'category', 'stock'])(
+      'rejects a missing %s with 400',
+      async (field) => {
+        const body = Object.fromEntries(
+          Object.entries(validProduct).filter(([key]) => key !== field),
+        );
+
+        const res = await admin().post('/api/products').send(body);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe('VALIDATION_ERROR');
+        expect(detailPaths(res.body)).toContain(field);
+        expect(await ProductModel.countDocuments()).toBe(0);
+      },
+    );
+
+    it.each([
+      ['price 0.01', { price: 0.01 }],
+      ['stock 0', { stock: 0 }],
+      ['10 images', { images: Array.from({ length: 10 }, (_v, i) => `https://e.com/${i}.jpg`) }],
+      ['a 120-char title', { title: 'a'.repeat(120) }],
+    ])('accepts %s (boundary)', async (_label, overrides) => {
+      const res = await admin()
+        .post('/api/products')
+        .send({ ...validProduct, ...overrides });
+
+      expect(res.status).toBe(201);
+      expect(await ProductModel.findById(res.body.id).lean()).toMatchObject(overrides);
+    });
   });
 
   describe('GET /api/products', () => {
@@ -225,18 +352,16 @@ describe('products module', () => {
 
   describe('GET /api/products/:id', () => {
     it('lets a USER see the detail', async () => {
-      const [id] = await insertAt([
-        { title: validProduct.title, creationAt: '2026-01-01T00:00:00Z' },
-      ]);
+      const created = await createProduct();
 
-      const res = await user().get(`/api/products/${id}`);
+      const res = await user().get(`/api/products/${created.id}`);
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({
-        id,
+        id: created.id,
         ...validProduct,
-        creationAt: '2026-01-01T00:00:00.000Z',
-        updatedAt: '2026-01-01T00:00:00.000Z',
+        creationAt: created.creationAt,
+        updatedAt: created.updatedAt,
       });
     });
 
@@ -249,6 +374,105 @@ describe('products module', () => {
 
     it('answers 400 INVALID_ID for a malformed id', async () => {
       const res = await user().get('/api/products/not-an-id');
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('INVALID_ID');
+    });
+  });
+
+  describe('PATCH /api/products/:id', () => {
+    it('updates only the given fields and refreshes updatedAt', async () => {
+      const [id] = await insertAt([{ title: 'Old title', creationAt: '2026-01-01T00:00:00Z' }]);
+
+      const res = await admin().patch(`/api/products/${id}`).send({ price: 30.5, stock: 0 });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ id, title: 'Old title', price: 30.5, stock: 0 });
+      expect(res.body.creationAt).toBe('2026-01-01T00:00:00.000Z');
+      expect(new Date(res.body.updatedAt).getTime()).toBeGreaterThan(
+        new Date('2026-01-01T00:00:00Z').getTime(),
+      );
+      const stored = await ProductModel.findById(id).lean();
+      expect(stored).toMatchObject({
+        title: 'Old title',
+        description: validProduct.description,
+        price: 30.5,
+        stock: 0,
+      });
+    });
+
+    it('rejects an empty body with 400 and keeps the product', async () => {
+      const created = await createProduct();
+      const before = await ProductModel.findById(created.id).lean();
+
+      const res = await admin().patch(`/api/products/${created.id}`).send({});
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+      expect(await ProductModel.findById(created.id).lean()).toEqual(before);
+    });
+
+    it('validates the fields it receives', async () => {
+      const created = await createProduct();
+
+      const res = await admin().patch(`/api/products/${created.id}`).send({ price: 0 });
+
+      expect(res.status).toBe(400);
+      expect(detailPaths(res.body)).toContain('price');
+      expect((await ProductModel.findById(created.id).lean())?.price).toBe(validProduct.price);
+    });
+
+    it('answers 404 PRODUCT_NOT_FOUND for a missing product', async () => {
+      const res = await admin().patch(`/api/products/${missingId}`).send({ stock: 1 });
+
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('PRODUCT_NOT_FOUND');
+    });
+
+    it('answers 403 to a USER and keeps the product', async () => {
+      const created = await createProduct();
+
+      const res = await user().patch(`/api/products/${created.id}`).send({ stock: 1 });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+      expect((await ProductModel.findById(created.id).lean())?.stock).toBe(validProduct.stock);
+    });
+
+    it('answers 400 INVALID_ID for a malformed id', async () => {
+      const res = await admin().patch('/api/products/123').send({ stock: 1 });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('INVALID_ID');
+    });
+  });
+
+  describe('DELETE /api/products/:id', () => {
+    it('deletes the product (204) and a second delete answers 404', async () => {
+      const created = await createProduct();
+
+      const first = await admin().delete(`/api/products/${created.id}`);
+      expect(first.status).toBe(204);
+      expect(first.body).toEqual({});
+      expect(await ProductModel.findById(created.id).lean()).toBeNull();
+
+      const second = await admin().delete(`/api/products/${created.id}`);
+      expect(second.status).toBe(404);
+      expect(second.body.error.code).toBe('PRODUCT_NOT_FOUND');
+    });
+
+    it('answers 403 to a USER and keeps the product', async () => {
+      const created = await createProduct();
+
+      const res = await user().delete(`/api/products/${created.id}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+      expect(await ProductModel.countDocuments()).toBe(1);
+    });
+
+    it('answers 400 INVALID_ID for a malformed id', async () => {
+      const res = await admin().delete('/api/products/not-an-id');
 
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe('INVALID_ID');

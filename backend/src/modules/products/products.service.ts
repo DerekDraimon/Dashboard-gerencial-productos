@@ -2,7 +2,13 @@ import type { Types } from 'mongoose';
 import { AppError } from '../../shared/errors/app-error.js';
 import type { Page } from '../../shared/http/pagination.js';
 import { ProductModel, type ProductRecord } from './products.model.js';
-import type { ListProductsFilter, Product } from './products.types.js';
+import type {
+  CreateProductInput,
+  ImportProductInput,
+  ListProductsFilter,
+  Product,
+  UpdateProductInput,
+} from './products.types.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -68,4 +74,44 @@ export async function getProductById(id: string): Promise<Product> {
     throw productNotFound();
   }
   return toProduct(doc);
+}
+
+export async function createProduct(input: CreateProductInput): Promise<Product> {
+  const doc = await ProductModel.create(input);
+  return toProduct(doc.toObject());
+}
+
+export async function hasProducts(): Promise<boolean> {
+  return (await ProductModel.exists({})) !== null;
+}
+
+/**
+ * Keeps the given `creationAt` (and uses it as `updatedAt`): with timestamps on, Mongoose would
+ * overwrite both with the insert time.
+ */
+export async function importProducts(items: ImportProductInput[]): Promise<number> {
+  const docs = await ProductModel.insertMany(
+    items.map((item) => ({ images: [], ...item, updatedAt: item.creationAt })),
+    { timestamps: false },
+  );
+  return docs.length;
+}
+
+export async function updateProduct(id: string, changes: UpdateProductInput): Promise<Product> {
+  const doc = await ProductModel.findByIdAndUpdate(
+    id,
+    { $set: changes },
+    { returnDocument: 'after', runValidators: true },
+  ).lean();
+  if (!doc) {
+    throw productNotFound();
+  }
+  return toProduct(doc);
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  const doc = await ProductModel.findByIdAndDelete(id).lean();
+  if (!doc) {
+    throw productNotFound();
+  }
 }

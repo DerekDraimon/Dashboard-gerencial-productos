@@ -10,6 +10,21 @@ export interface Product {
   updatedAt: Date;
 }
 
+export interface CreateProductInput {
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  images?: string[];
+  stock: number;
+}
+
+export interface ImportProductInput extends CreateProductInput {
+  creationAt: Date;
+}
+
+export type UpdateProductInput = Partial<CreateProductInput>;
+
 export interface ListProductsFilter {
   offset: number;
   limit: number;
