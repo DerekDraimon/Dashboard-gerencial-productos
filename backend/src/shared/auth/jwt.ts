@@ -26,8 +26,13 @@ export function signToken(payload: TokenPayload): string {
   const { secret, expiresIn } = readJwtConfig();
   return jwt.sign({ sub: payload.sub, role: payload.role }, secret, {
     algorithm: 'HS256',
-    expiresIn: expiresIn as SignOptions['expiresIn'],
+    expiresIn: toExpiresIn(expiresIn),
   });
+}
+
+function toExpiresIn(value: string): NonNullable<SignOptions['expiresIn']> {
+  // jsonwebtoken reads a numeric string as milliseconds; a number means seconds.
+  return /^\d+$/.test(value) ? Number(value) : (value as NonNullable<SignOptions['expiresIn']>);
 }
 
 export function verifyToken(token: string): TokenPayload {
