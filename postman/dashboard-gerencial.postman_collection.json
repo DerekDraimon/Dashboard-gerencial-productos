@@ -834,6 +834,245 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "03 Users",
+      "item": [
+        {
+          "name": "List active users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectUser(user) {",
+                  "  pm.expect(user).to.be.an('object');",
+                  "  pm.expect(user.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(user.email).to.be.a('string');",
+                  "  pm.expect(user.name).to.be.a('string');",
+                  "  pm.expect(user.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "  pm.expect(user.active).to.be.a('boolean');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body is a page with data and meta', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.meta).to.be.an('object');",
+                  "  pm.expect(json.meta.total).to.be.a('number');",
+                  "  pm.expect(json.meta.offset).to.be.a('number');",
+                  "  pm.expect(json.meta.limit).to.be.a('number');",
+                  "  pm.expect(json.data.length).to.be.at.most(json.meta.limit);",
+                  "  json.data.forEach(expectUser);",
+                  "});",
+                  "pm.test('Every user is active', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.length).to.be.above(0);",
+                  "  json.data.forEach((u) => pm.expect(u.active).to.eql(true));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?active=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "active",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create user",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Unique email per run so the collection can be run repeatedly.",
+                  "pm.variables.set('newUserEmail', 'qa+' + Date.now() + '@dashboard.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectUser(user) {",
+                  "  pm.expect(user).to.be.an('object');",
+                  "  pm.expect(user.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(user.email).to.be.a('string');",
+                  "  pm.expect(user.name).to.be.a('string');",
+                  "  pm.expect(user.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "  pm.expect(user.active).to.be.a('boolean');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "}",
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Created user matches the payload', function () {",
+                  "  const json = pm.response.json();",
+                  "  expectUser(json);",
+                  "  pm.expect(json.email).to.eql(pm.variables.get('newUserEmail'));",
+                  "  pm.expect(json.name).to.eql('Postman QA User');",
+                  "  pm.expect(json.role).to.eql('USER');",
+                  "  pm.expect(json.active).to.eql(true);",
+                  "  pm.environment.set('userId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Postman123!\",\n  \"name\": \"Postman QA User\",\n  \"role\": \"USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectUser(user) {",
+                  "  pm.expect(user).to.be.an('object');",
+                  "  pm.expect(user.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(user.email).to.be.a('string');",
+                  "  pm.expect(user.name).to.be.a('string');",
+                  "  pm.expect(user.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "  pm.expect(user.active).to.be.a('boolean');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Name is updated', function () {",
+                  "  const json = pm.response.json();",
+                  "  expectUser(json);",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('userId'));",
+                  "  pm.expect(json.name).to.eql('Postman QA User (updated)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman QA User (updated)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectUser(user) {",
+                  "  pm.expect(user).to.be.an('object');",
+                  "  pm.expect(user.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(user.email).to.be.a('string');",
+                  "  pm.expect(user.name).to.be.a('string');",
+                  "  pm.expect(user.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "  pm.expect(user.active).to.be.a('boolean');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('User is now inactive', function () {",
+                  "  const json = pm.response.json();",
+                  "  expectUser(json);",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('userId'));",
+                  "  pm.expect(json.active).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {
