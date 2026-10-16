@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 
-/** Minimal logger contract so callers (and tests) can redirect connection logs. */
 export interface DbLogger {
   info: (message: string) => void;
   warn: (message: string) => void;
@@ -8,9 +7,7 @@ export interface DbLogger {
 }
 
 export interface ConnectDatabaseOptions {
-  /** Delay between failed initial connection attempts. Default: 5000 ms. */
   retryDelayMs?: number;
-  /** How long the driver waits for a server on each attempt. Default: 5000 ms. */
   serverSelectionTimeoutMS?: number;
   logger?: DbLogger;
 }
@@ -23,7 +20,6 @@ let listenersAttached = false;
 /** Set after the first successful connection; from then on the driver reconnects by itself. */
 let hasConnected = false;
 
-/** True when Mongoose holds an open connection that can serve queries. */
 export function isDatabaseConnected(): boolean {
   return mongoose.connection.readyState === READY_STATE_CONNECTED;
 }
@@ -53,14 +49,9 @@ function attachLifecycleListeners(logger: DbLogger): void {
 }
 
 /**
- * Starts connecting to MongoDB without blocking or throwing, so the HTTP server can
- * come up even when the database is down.
- *
- * Mongoose only reconnects automatically after a first successful connection; a
- * failed *initial* connection is final. This function covers that gap by retrying
- * the initial connection every `retryDelayMs` until it succeeds or
- * `disconnectDatabase()` is called. Meanwhile, routes guarded by `requireDb`
- * answer 503 and `/api/health` reports `degraded`.
+ * Non-blocking so the server can start while MongoDB is down. Mongoose only auto-reconnects
+ * after a first successful connection, so the initial connection is retried here until it
+ * succeeds or `disconnectDatabase()` is called.
  */
 export function connectDatabase(uri: string, options: ConnectDatabaseOptions = {}): void {
   const { retryDelayMs = 5000, serverSelectionTimeoutMS = 5000, logger = console } = options;
@@ -90,7 +81,6 @@ export function connectDatabase(uri: string, options: ConnectDatabaseOptions = {
   void attempt(1);
 }
 
-/** Cancels pending retries and closes the connection (used on graceful shutdown). */
 export async function disconnectDatabase(): Promise<void> {
   stopped = true;
   if (retryTimer !== undefined) {

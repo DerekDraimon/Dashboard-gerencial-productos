@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { parseEnv } from '../src/shared/config/env.js';
 
+const secret32 = 'a'.repeat(32);
+
 const validSource = {
   MONGODB_URI: 'mongodb://localhost:27017/dashboard',
-  JWT_SECRET: 'test-secret',
+  JWT_SECRET: secret32,
 };
 
 describe('parseEnv', () => {
@@ -14,7 +16,7 @@ describe('parseEnv', () => {
       NODE_ENV: 'development',
       PORT: 4000,
       MONGODB_URI: 'mongodb://localhost:27017/dashboard',
-      JWT_SECRET: 'test-secret',
+      JWT_SECRET: secret32,
       JWT_EXPIRES_IN: '1d',
       CORS_ORIGIN: 'http://localhost:5173',
     });
@@ -36,7 +38,7 @@ describe('parseEnv', () => {
   });
 
   it('throws an error naming MONGODB_URI when it is missing', () => {
-    expect(() => parseEnv({ JWT_SECRET: 'test-secret' })).toThrow(/MONGODB_URI/);
+    expect(() => parseEnv({ JWT_SECRET: secret32 })).toThrow(/MONGODB_URI/);
   });
 
   it('treats an empty MONGODB_URI as missing', () => {
@@ -45,6 +47,16 @@ describe('parseEnv', () => {
 
   it('throws an error naming JWT_SECRET when it is missing', () => {
     expect(() => parseEnv({ MONGODB_URI: validSource.MONGODB_URI })).toThrow(/JWT_SECRET/);
+  });
+
+  it('accepts a JWT_SECRET of exactly 32 characters (boundary)', () => {
+    expect(parseEnv(validSource).JWT_SECRET).toBe(secret32);
+  });
+
+  it('rejects a JWT_SECRET shorter than 32 characters', () => {
+    expect(() => parseEnv({ ...validSource, JWT_SECRET: 'a'.repeat(31) })).toThrow(
+      /JWT_SECRET must be at least 32 characters/,
+    );
   });
 
   it('names every invalid variable in a single error', () => {

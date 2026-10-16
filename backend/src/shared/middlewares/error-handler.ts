@@ -1,7 +1,6 @@
 import type { ErrorRequestHandler } from 'express';
 import { AppError, type ErrorResponseBody } from '../errors/app-error.js';
 
-/** Shape of the error `express.json()` raises for an unparsable body. */
 function isJsonParseError(error: unknown): boolean {
   return (
     error instanceof SyntaxError &&
@@ -10,16 +9,7 @@ function isJsonParseError(error: unknown): boolean {
   );
 }
 
-/**
- * Centralized Express error middleware. It must be registered last.
- *
- * - `AppError` -> its own status, code, message and optional details.
- * - Malformed JSON body -> 400 `INVALID_JSON`.
- * - Anything else -> 500 `INTERNAL_ERROR`; the real error is logged server side and
- *   neither its message nor its stack reaches the client.
- *
- * Express 5 forwards rejected promises from async handlers here automatically.
- */
+/** Unexpected errors become a generic 500: the real message and stack are only logged, never sent. */
 export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, next) => {
   if (res.headersSent) {
     next(error);

@@ -2,7 +2,6 @@ export const USER_ROLES = ['ADMIN', 'USER'] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
 
-/** Public representation of a user: never carries the password hash. */
 export interface User {
   id: string;
   email: string;
@@ -13,7 +12,6 @@ export interface User {
   updatedAt: Date;
 }
 
-/** User plus its bcrypt hash, only for credential checks (auth). */
 export interface UserWithPassword extends User {
   password: string;
 }

@@ -3,11 +3,6 @@ import { z } from 'zod';
 export const DEFAULT_LIMIT = 10;
 export const MAX_LIMIT = 100;
 
-/**
- * Query-string pagination (`?offset&limit`). Values are coerced from strings.
- * A `limit` over {@link MAX_LIMIT} is rejected, never silently clamped.
- * Extend it with module filters: `paginationQuerySchema.extend({ ... })`.
- */
 export const paginationQuerySchema = z.object({
   offset: z.coerce
     .number({ error: 'offset must be a number' })
@@ -24,7 +19,6 @@ export const paginationQuerySchema = z.object({
 
 export type PaginationQuery = z.output<typeof paginationQuerySchema>;
 
-/** Paginated list response: `{ data, meta: { total, offset, limit } }`. */
 export interface Page<T> {
   data: T[];
   meta: {
@@ -35,7 +29,6 @@ export interface Page<T> {
   };
 }
 
-/** Boolean query flag that only accepts the literal strings `true` and `false`. */
 export const booleanQueryFlag = (name: string) =>
   z
     .enum(['true', 'false'], { error: `${name} must be true or false` })

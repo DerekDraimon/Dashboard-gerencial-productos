@@ -7,19 +7,12 @@ export interface SeedPasswords {
 }
 
 export interface SeedResult {
-  /** Emails created in this run. */
   created: string[];
-  /** Emails that already existed and were left untouched. */
   skipped: string[];
 }
 
 const MIN_PASSWORD_LENGTH = 8;
 
-/**
- * Reads the seed passwords from an environment map.
- *
- * @throws Error naming every missing or too short variable, so `npm run seed` fails with a clear message.
- */
 export function readSeedPasswords(source: {
   SEED_ADMIN_PASSWORD?: string;
   SEED_USER_PASSWORD?: string;
@@ -46,11 +39,7 @@ export function readSeedPasswords(source: {
   return { adminPassword, userPassword };
 }
 
-/**
- * Creates the ADMIN and USER test accounts. Idempotent: an account whose email already
- * exists is skipped (its password and role are not changed), so running it twice keeps 2 users.
- * Requires an open Mongoose connection.
- */
+/** Idempotent: an existing email is skipped and its password and role are left unchanged. */
 export async function seedUsers(passwords: SeedPasswords): Promise<SeedResult> {
   const accounts: { email: string; name: string; role: UserRole; password: string }[] = [
     {

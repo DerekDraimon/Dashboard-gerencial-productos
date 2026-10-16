@@ -28,7 +28,6 @@ server.on('error', (error) => {
 
 let shuttingDown = false;
 
-/** Stops accepting connections, closes MongoDB and exits; forces exit if it hangs. */
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
   if (shuttingDown) {
     return;

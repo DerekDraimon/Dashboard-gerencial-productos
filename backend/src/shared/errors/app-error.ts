@@ -1,4 +1,3 @@
-/** Body returned by the API for every error response. */
 export interface ErrorResponseBody {
   error: {
     code: string;
@@ -7,10 +6,6 @@ export interface ErrorResponseBody {
   };
 }
 
-/**
- * Expected (operational) error. The centralized error handler turns it into
- * `{ error: { code, message, details? } }` with the given HTTP status.
- */
 export class AppError extends Error {
   readonly status: number;
   readonly code: string;

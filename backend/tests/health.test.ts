@@ -7,7 +7,6 @@ import { createApp } from '../src/app.js';
 import { errorHandler } from '../src/shared/middlewares/error-handler.js';
 import { requireDb } from '../src/shared/middlewares/require-db.js';
 
-/** Test-only app with a route guarded by requireDb. */
 function buildGuardedApp() {
   const app = express();
   app.get('/guarded', requireDb, (_req, res) => {

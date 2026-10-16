@@ -6,7 +6,6 @@ import { AppError } from '../src/shared/errors/app-error.js';
 import { errorHandler } from '../src/shared/middlewares/error-handler.js';
 import { notFoundHandler } from '../src/shared/middlewares/not-found.js';
 
-/** Test-only app that mounts throwing routes on top of the shared error middlewares. */
 function buildThrowingApp() {
   const app = express();
   app.get('/app-error', () => {

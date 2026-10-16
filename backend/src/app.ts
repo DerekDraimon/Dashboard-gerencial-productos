@@ -6,11 +6,9 @@ import { errorHandler } from './shared/middlewares/error-handler.js';
 import { notFoundHandler } from './shared/middlewares/not-found.js';
 
 export interface AppOptions {
-  /** Origin allowed by CORS (the frontend URL). */
   corsOrigin?: string;
 }
 
-/** Builds the Express application without listening, so tests can drive it with Supertest. */
 export function createApp(options: AppOptions = {}): Express {
   const app = express();
 

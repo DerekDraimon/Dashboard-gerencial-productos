@@ -1,7 +1,3 @@
-/**
- * `npm run seed`: creates the ADMIN and USER test accounts in the database from `MONGODB_URI`.
- * Exits with code 1 and a clear message when configuration or the database is unavailable.
- */
 import mongoose from 'mongoose';
 import { loadEnv } from '../shared/config/env.js';
 import { readSeedPasswords, seedUsers } from './seed-users.js';

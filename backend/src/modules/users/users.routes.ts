@@ -10,7 +10,6 @@ import {
   updateUserStatusBodySchema,
 } from './users.schemas.js';
 
-/** `/api/users`. Every route needs MongoDB. Auth guards are added with the auth module. */
 export const usersRouter = Router();
 
 usersRouter.use(requireDb);

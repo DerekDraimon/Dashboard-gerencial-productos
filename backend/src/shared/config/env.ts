@@ -16,24 +16,17 @@ const envSchema = z.object({
     .max(65535, 'PORT must be between 1 and 65535')
     .default(4000),
   MONGODB_URI: requiredString('MONGODB_URI'),
-  JWT_SECRET: requiredString('JWT_SECRET'),
+  JWT_SECRET: requiredString('JWT_SECRET').min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().trim().min(1).default('1d'),
   CORS_ORIGIN: z.string().trim().min(1).default('http://localhost:5173'),
   SEED_ADMIN_PASSWORD: z.string().min(1).optional(),
   SEED_USER_PASSWORD: z.string().min(1).optional(),
 });
 
-/** Validated, typed application configuration. */
 export type Env = z.infer<typeof envSchema>;
 
 type EnvSource = Record<string, string | undefined>;
 
-/**
- * Validates a raw variable map (usually `process.env`) and returns the typed config.
- * Pure function so it can be unit tested without touching the real environment.
- *
- * @throws Error listing every invalid or missing variable by name, so the process can fail fast.
- */
 export function parseEnv(source: EnvSource): Env {
   const result = envSchema.safeParse(source);
   if (result.success) {
@@ -47,7 +40,6 @@ export function parseEnv(source: EnvSource): Env {
   throw new Error(`Invalid environment configuration:\n${problems.join('\n')}`);
 }
 
-/** Loads `.env` (when present) into `process.env` and validates the result. */
 export function loadEnv(): Env {
   loadDotenv({ quiet: true });
   return parseEnv(process.env);
