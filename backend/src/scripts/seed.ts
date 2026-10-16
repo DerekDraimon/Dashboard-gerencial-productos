@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { loadEnv } from '../shared/config/env.js';
+import { seedProducts } from './seed-products.js';
 import { readSeedPasswords, seedUsers } from './seed-users.js';
 
 async function main(): Promise<void> {
@@ -15,6 +16,13 @@ async function main(): Promise<void> {
     for (const email of skipped) {
       console.info(`skipped  ${email} (already exists)`);
     }
+
+    const products = await seedProducts();
+    console.info(
+      products.skipped
+        ? 'skipped  products (the collection already has products)'
+        : `created  ${products.inserted} products`,
+    );
   } finally {
     await mongoose.disconnect();
   }
