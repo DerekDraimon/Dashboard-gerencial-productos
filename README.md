@@ -44,7 +44,7 @@ npm run db:up
 npm run dev:api
 ```
 
-Para crear los usuarios de prueba, ejecuta `npm run seed` con MongoDB levantado (ver [Credenciales de prueba](#credenciales-de-prueba)).
+Para crear los usuarios de prueba y los productos de ejemplo, ejecuta `npm run seed` con MongoDB levantado (ver [Credenciales de prueba](#credenciales-de-prueba)).
 
 `npm run dev` hace los pasos 3 y 4 en un solo comando. Para detener MongoDB: `npm run db:down` (los datos se conservan en el volumen).
 
@@ -92,6 +92,8 @@ npm run seed
 
 Las contraseñas se leen de `SEED_ADMIN_PASSWORD` y `SEED_USER_PASSWORD` (mínimo 8 caracteres); si falta alguna, el seed termina indicando cuál. Es idempotente: si un email ya existe, lo omite sin modificarlo, así que ejecutarlo varias veces mantiene los mismos 2 usuarios. Para cambiar la contraseña de una cuenta ya creada, elimina ese usuario de la base de datos y vuelve a ejecutar el seed.
 
+Después de los usuarios, el seed inserta 20 productos de ejemplo en 5 categorías (`Electronics`, `Books`, `Sports`, `Home`, `Toys`), con precios y stock variados y fechas de creación (`creationAt`) repartidas en los últimos 60 días. Solo los inserta si la colección de productos está vacía: si ya existe algún producto, no crea ni modifica ninguno.
+
 ## API
 
 Todas las rutas están bajo `/api`. Los errores siguen el formato `{ "error": { "code", "message", "details"? } }`; las rutas que usan la base de datos responden `503 DATABASE_UNAVAILABLE` si MongoDB no está disponible.
@@ -115,11 +117,13 @@ Errores: `400 VALIDATION_ERROR`, `429 TOO_MANY_REQUESTS` (demasiados intentos de
 
 ### Permisos
 
-| Recurso                | `ADMIN` | `USER` | Sin token |
-| ---------------------- | ------- | ------ | --------- |
-| `POST /api/auth/login` | Sí      | Sí     | Sí        |
-| `GET /api/auth/me`     | Sí      | Sí     | `401`     |
-| `/api/users` (todas)   | Sí      | `403`  | `401`     |
+| Recurso                                           | `ADMIN` | `USER` | Sin token |
+| ------------------------------------------------- | ------- | ------ | --------- |
+| `POST /api/auth/login`                            | Sí      | Sí     | Sí        |
+| `GET /api/auth/me`                                | Sí      | Sí     | `401`     |
+| `/api/users` (todas)                              | Sí      | `403`  | `401`     |
+| `GET /api/products` (lista, detalle y categorías) | Sí      | Sí     | `401`     |
+| `POST`, `PATCH` y `DELETE /api/products`          | Sí      | `403`  | `401`     |
 
 ### Usuarios
 
@@ -134,6 +138,28 @@ Todas las rutas de usuarios requieren un token de un usuario `ADMIN`.
 | `PATCH` | `/api/users/:id/status` | Inactiva o reactiva sin eliminar: `{ active }`                                                     |
 
 La lista responde `{ data, meta: { total, offset, limit } }`. Las contraseñas se guardan con bcrypt y nunca se devuelven. Errores principales: `400 VALIDATION_ERROR` (con `details: [{ path, message }]`, también si `limit` supera 100 o el body trae campos no permitidos como `password` o `email` en el `PATCH`), `400 INVALID_ID`, `404 USER_NOT_FOUND`, `409 EMAIL_ALREADY_EXISTS` (el email no distingue mayúsculas) y `409 CANNOT_MODIFY_SELF` (un administrador no puede inactivarse ni cambiar su propio rol; sí puede cambiar su nombre). La contraseña debe tener entre 8 y 72 caracteres.
+
+### Productos
+
+Todas las rutas de productos requieren token. Cualquier rol puede consultar; solo `ADMIN` puede crear, actualizar y eliminar.
+
+| Método   | Ruta                       | Descripción                                                                                                                   |
+| -------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/products`            | Lista paginada, más recientes primero (por `creationAt`). Query: `offset` (0), `limit` (10, máx. 100), `search`, `from`, `to` |
+| `GET`    | `/api/products/categories` | Categorías existentes, sin repetir y ordenadas alfabéticamente                                                                |
+| `GET`    | `/api/products/:id`        | Detalle de un producto                                                                                                        |
+| `POST`   | `/api/products`            | Crea un producto: `{ title, description, price, category, images?, stock }`                                                   |
+| `PATCH`  | `/api/products/:id`        | Actualiza cualquiera de esos campos (al menos uno)                                                                            |
+| `DELETE` | `/api/products/:id`        | Elimina el producto definitivamente; responde `204` sin cuerpo                                                                |
+
+Parámetros de la lista:
+
+- `search`: busca en el título sin distinguir mayúsculas; el texto se toma literal (`.*` busca esos dos caracteres, no es una expresión regular).
+- `from` y `to`: fechas `YYYY-MM-DD` (en UTC) para filtrar por `creationAt`; ambas son inclusivas y `to` cubre el día completo. Se pueden usar por separado. Si `from` es posterior a `to`, o una fecha tiene otro formato o no existe (por ejemplo `2026-02-30`), responde `400`.
+
+La lista responde `{ data, meta: { total, offset, limit } }`. Reglas de los campos: `title` hasta 120 caracteres, `description` hasta 2000, `category` hasta 60 (los tres obligatorios y sin espacios al inicio ni al final); `price` mayor que 0 y con hasta 2 decimales; `stock` entero mayor o igual a 0; `images` lista de hasta 10 URLs `http` o `https` (por defecto `[]`).
+
+Errores principales: `400 VALIDATION_ERROR` (con `details: [{ path, message }]`, también si el body trae campos no permitidos), `400 INVALID_ID`, `404 PRODUCT_NOT_FOUND`, `401 UNAUTHENTICATED` / `401 INVALID_TOKEN` y `403 FORBIDDEN` (un `USER` intenta crear, actualizar o eliminar).
 
 ## Colección de Postman
 
