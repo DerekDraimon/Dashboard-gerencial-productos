@@ -1,0 +1,26 @@
+{
+  "name": "dashboard-gerencial-productos",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Product inventory management dashboard (monorepo: backend + frontend).",
+  "workspaces": [
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run db:up && concurrently -n api -c blue \"npm:dev:api\"",
+    "dev:api": "npm run dev -w backend",
+    "db:up": "docker compose up -d mongo",
+    "db:down": "docker compose down",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "seed": "npm run seed -w backend --if-present",
+    "format": "prettier --write ."
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "prettier": "^3.9.10"
+  }
+}
