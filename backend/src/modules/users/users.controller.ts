@@ -9,8 +9,6 @@ import type {
 } from './users.schemas.js';
 import * as usersService from './users.service.js';
 
-/** HTTP adapters: read validated input, call the service, write the response. */
-
 export const listUsers: RequestHandler = async (_req, res) => {
   const query = validated<typeof listUsersQuerySchema>(res, 'query');
   res.json(await usersService.listUsers(query));
@@ -26,14 +24,14 @@ export const createUser: RequestHandler = async (_req, res) => {
   res.status(201).json(await usersService.createUser(body));
 };
 
-export const updateUser: RequestHandler = async (_req, res) => {
+export const updateUser: RequestHandler = async (req, res) => {
   const { id } = validated<typeof idParamsSchema>(res, 'params');
   const body = validated<typeof updateUserBodySchema>(res, 'body');
-  res.json(await usersService.updateUser(id, body));
+  res.json(await usersService.updateUser(id, body, req.auth?.sub));
 };
 
-export const updateUserStatus: RequestHandler = async (_req, res) => {
+export const updateUserStatus: RequestHandler = async (req, res) => {
   const { id } = validated<typeof idParamsSchema>(res, 'params');
   const { active } = validated<typeof updateUserStatusBodySchema>(res, 'body');
-  res.json(await usersService.setUserStatus(id, active));
+  res.json(await usersService.setUserStatus(id, active, req.auth?.sub));
 };

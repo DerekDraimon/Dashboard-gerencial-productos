@@ -23,7 +23,9 @@ export const createUserBodySchema = z
     email: emailSchema,
     password: z
       .string({ error: 'password is required' })
-      .min(8, 'password must be at least 8 characters'),
+      .min(8, 'password must be at least 8 characters')
+      // bcrypt ignores everything past 72 bytes, so longer passwords would be silently truncated.
+      .max(72, 'password must be at most 72 characters'),
     name: nameSchema,
     role: roleSchema.optional(),
   })

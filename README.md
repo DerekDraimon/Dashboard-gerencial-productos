@@ -69,7 +69,7 @@ Se leen de `backend/.env` (ver `backend/.env.example`). Al arrancar se validan y
 | --------------------- | ----------- | ----------------------- | ------------------------------------------------------------------------------- |
 | `PORT`                | No          | `4000`                  | Puerto HTTP de la API                                                           |
 | `MONGODB_URI`         | Sí          | —                       | Cadena de conexión a MongoDB (`mongodb://localhost:27017/dashboard` con Docker) |
-| `JWT_SECRET`          | Sí          | —                       | Secreto para firmar los tokens JWT                                              |
+| `JWT_SECRET`          | Sí          | —                       | Secreto para firmar los tokens JWT (mínimo 32 caracteres)                       |
 | `JWT_EXPIRES_IN`      | No          | `1d`                    | Vigencia de los tokens JWT                                                      |
 | `CORS_ORIGIN`         | No          | `http://localhost:5173` | Origen permitido del frontend                                                   |
 | `SEED_ADMIN_PASSWORD` | No          | —                       | Contraseña del usuario `ADMIN` creado por el seed                               |
@@ -94,7 +94,34 @@ Las contraseñas se leen de `SEED_ADMIN_PASSWORD` y `SEED_USER_PASSWORD` (mínim
 
 Todas las rutas están bajo `/api`. Los errores siguen el formato `{ "error": { "code", "message", "details"? } }`; las rutas que usan la base de datos responden `503 DATABASE_UNAVAILABLE` si MongoDB no está disponible.
 
+### Autenticación
+
+| Método | Ruta              | Descripción                                                          |
+| ------ | ----------------- | -------------------------------------------------------------------- |
+| `POST` | `/api/auth/login` | Inicia sesión con `{ email, password }` y responde `{ token, user }` |
+| `GET`  | `/api/auth/me`    | Devuelve el usuario autenticado (requiere token)                     |
+
+El token es un JWT con vigencia `JWT_EXPIRES_IN`. Se envía en cada petición protegida con la cabecera:
+
+```http
+Authorization: Bearer <token>
+```
+
+En cada petición la API vuelve a leer el usuario de la base de datos: si fue inactivado o eliminado después de emitir el token, la siguiente petición responde `401`, y si cambió su rol se aplica el rol nuevo.
+
+Errores: `400 VALIDATION_ERROR`, `401 INVALID_CREDENTIALS` (el mismo para email desconocido y contraseña incorrecta), `403 USER_INACTIVE` (credenciales correctas pero usuario inactivo), `401 UNAUTHENTICATED` (falta el token), `401 INVALID_TOKEN` (token inválido, expirado o de un usuario inactivo o inexistente) y `403 FORBIDDEN` (el rol no tiene permiso).
+
+### Permisos
+
+| Recurso                | `ADMIN` | `USER` | Sin token |
+| ---------------------- | ------- | ------ | --------- |
+| `POST /api/auth/login` | Sí      | Sí     | Sí        |
+| `GET /api/auth/me`     | Sí      | Sí     | `401`     |
+| `/api/users` (todas)   | Sí      | `403`  | `401`     |
+
 ### Usuarios
+
+Todas las rutas de usuarios requieren un token de un usuario `ADMIN`.
 
 | Método  | Ruta                    | Descripción                                                                                        |
 | ------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
@@ -104,7 +131,7 @@ Todas las rutas están bajo `/api`. Los errores siguen el formato `{ "error": { 
 | `PATCH` | `/api/users/:id`        | Actualiza `{ name?, role?, active? }` (al menos un campo)                                          |
 | `PATCH` | `/api/users/:id/status` | Inactiva o reactiva sin eliminar: `{ active }`                                                     |
 
-La lista responde `{ data, meta: { total, offset, limit } }`. Las contraseñas se guardan con bcrypt y nunca se devuelven. Errores principales: `400 VALIDATION_ERROR` (con `details: [{ path, message }]`, también si `limit` supera 100 o el body trae campos no permitidos como `password` o `email` en el `PATCH`), `400 INVALID_ID`, `404 USER_NOT_FOUND` y `409 EMAIL_ALREADY_EXISTS` (el email no distingue mayúsculas).
+La lista responde `{ data, meta: { total, offset, limit } }`. Las contraseñas se guardan con bcrypt y nunca se devuelven. Errores principales: `400 VALIDATION_ERROR` (con `details: [{ path, message }]`, también si `limit` supera 100 o el body trae campos no permitidos como `password` o `email` en el `PATCH`), `400 INVALID_ID`, `404 USER_NOT_FOUND`, `409 EMAIL_ALREADY_EXISTS` (el email no distingue mayúsculas) y `409 CANNOT_MODIFY_SELF` (un administrador no puede inactivarse ni cambiar su propio rol; sí puede cambiar su nombre). La contraseña debe tener entre 8 y 72 caracteres.
 
 ## Colección de Postman
 

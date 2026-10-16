@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import type { Types } from 'mongoose';
 import { AppError } from '../../shared/errors/app-error.js';
+import { objectIdSchema } from '../../shared/http/object-id.js';
 import type { Page } from '../../shared/http/pagination.js';
 import { UserModel, type UserRecord } from './users.model.js';
 import type {
@@ -45,7 +46,6 @@ function isDuplicateKeyError(error: unknown): boolean {
   );
 }
 
-/** Lists users newest first, optionally filtered by `active`. */
 export async function listUsers({ offset, limit, active }: ListUsersFilter): Promise<Page<User>> {
   const filter = active === undefined ? {} : { active };
   const [docs, total] = await Promise.all([
@@ -56,23 +56,25 @@ export async function listUsers({ offset, limit, active }: ListUsersFilter): Pro
   return { data: docs.map(toUser), meta: { total, offset, limit } };
 }
 
-/** @throws AppError 404 `USER_NOT_FOUND` */
-export async function getUserById(id: string): Promise<User> {
+export async function findUserById(id: string): Promise<User | null> {
+  if (!objectIdSchema.safeParse(id).success) {
+    return null;
+  }
   const doc = await UserModel.findById(id).lean();
-  if (!doc) {
+  return doc ? toUser(doc) : null;
+}
+
+export async function getUserById(id: string): Promise<User> {
+  const user = await findUserById(id);
+  if (!user) {
     throw userNotFound();
   }
-  return toUser(doc);
+  return user;
 }
 
 /**
- * Creates a user with a bcrypt-hashed password.
- *
- * Duplicates are detected twice: a pre-check gives a clean 409 in the common case, and
- * the unique index catches the race where two requests pass the pre-check at once
- * (MongoDB error E11000), which is mapped to the same 409.
- *
- * @throws AppError 409 `EMAIL_ALREADY_EXISTS` (case-insensitive: emails are stored lowercase)
+ * The pre-check gives a clean 409 in the common case; the unique index catches the race where
+ * two requests pass it at once (E11000), mapped to the same 409.
  */
 export async function createUser(input: CreateUserInput): Promise<User> {
   const email = input.email.trim().toLowerCase();
@@ -92,8 +94,23 @@ export async function createUser(input: CreateUserInput): Promise<User> {
   }
 }
 
-/** Partially updates name, role and/or active. @throws AppError 404 `USER_NOT_FOUND` */
-export async function updateUser(id: string, changes: UpdateUserInput): Promise<User> {
+/** Keeps an admin from locking themselves out by deactivating or demoting their own account. */
+function assertNotModifyingOwnAccess(id: string, changes: UpdateUserInput, actorId?: string): void {
+  if (actorId === id && (changes.role !== undefined || changes.active !== undefined)) {
+    throw new AppError(
+      409,
+      'CANNOT_MODIFY_SELF',
+      'You cannot change your own role or active status',
+    );
+  }
+}
+
+export async function updateUser(
+  id: string,
+  changes: UpdateUserInput,
+  actorId?: string,
+): Promise<User> {
+  assertNotModifyingOwnAccess(id, changes, actorId);
   const doc = await UserModel.findByIdAndUpdate(
     id,
     { $set: changes },
@@ -105,12 +122,10 @@ export async function updateUser(id: string, changes: UpdateUserInput): Promise<
   return toUser(doc);
 }
 
-/** Deactivates or reactivates a user; users are never physically deleted. */
-export async function setUserStatus(id: string, active: boolean): Promise<User> {
-  return updateUser(id, { active });
+export async function setUserStatus(id: string, active: boolean, actorId?: string): Promise<User> {
+  return updateUser(id, { active }, actorId);
 }
 
-/** For authentication: the user and its hash, or `null` when the email is unknown. */
 export async function findByEmailWithPassword(email: string): Promise<UserWithPassword | null> {
   const doc = await UserModel.findOne({ email: email.trim().toLowerCase() })
     .select('+password')
@@ -118,7 +133,6 @@ export async function findByEmailWithPassword(email: string): Promise<UserWithPa
   return doc ? { ...toUser(doc), password: doc.password } : null;
 }
 
-/** Compares a plain password with a stored bcrypt hash. */
 export function verifyPassword(plain: string, hash: string): Promise<boolean> {
   return bcrypt.compare(plain, hash);
 }
