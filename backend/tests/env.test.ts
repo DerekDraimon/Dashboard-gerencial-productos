@@ -19,6 +19,8 @@ describe('parseEnv', () => {
       JWT_SECRET: secret32,
       JWT_EXPIRES_IN: '1d',
       CORS_ORIGIN: 'http://localhost:5173',
+      LOGIN_RATE_LIMIT_WINDOW_MS: 900000,
+      LOGIN_RATE_LIMIT_MAX: 10,
     });
   });
 
@@ -69,5 +71,34 @@ describe('parseEnv', () => {
 
   it('rejects a PORT outside the valid range', () => {
     expect(() => parseEnv({ ...validSource, PORT: '70000' })).toThrow(/PORT/);
+  });
+
+  it('coerces the login rate limit variables to numbers', () => {
+    const env = parseEnv({
+      ...validSource,
+      LOGIN_RATE_LIMIT_WINDOW_MS: '60000',
+      LOGIN_RATE_LIMIT_MAX: '1',
+    });
+
+    expect(env.LOGIN_RATE_LIMIT_WINDOW_MS).toBe(60000);
+    expect(env.LOGIN_RATE_LIMIT_MAX).toBe(1);
+  });
+
+  it.each([
+    ['LOGIN_RATE_LIMIT_MAX', 'abc'],
+    ['LOGIN_RATE_LIMIT_MAX', '0'],
+    ['LOGIN_RATE_LIMIT_MAX', '2.5'],
+    ['LOGIN_RATE_LIMIT_WINDOW_MS', 'abc'],
+    ['LOGIN_RATE_LIMIT_WINDOW_MS', '0'],
+  ])('rejects %s=%s', (name, value) => {
+    expect(() => parseEnv({ ...validSource, [name]: value })).toThrow(new RegExp(name));
+  });
+
+  it.each(['3600', '15m', '12h', '1d', '30s'])('accepts JWT_EXPIRES_IN=%s', (value) => {
+    expect(parseEnv({ ...validSource, JWT_EXPIRES_IN: value }).JWT_EXPIRES_IN).toBe(value);
+  });
+
+  it.each(['1w', 'abc', '0', '-5', '0m', '1.5h', '15 m'])('rejects JWT_EXPIRES_IN=%s', (value) => {
+    expect(() => parseEnv({ ...validSource, JWT_EXPIRES_IN: value })).toThrow(/JWT_EXPIRES_IN/);
   });
 });

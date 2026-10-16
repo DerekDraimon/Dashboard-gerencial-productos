@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { booleanQueryFlag, paginationQuerySchema } from '../../shared/http/pagination.js';
 import { USER_ROLES } from './users.types.js';
 
+const PASSWORD_MAX_BYTES = 72;
+
 const emailSchema = z
   .string({ error: 'email is required' })
   .trim()
@@ -25,7 +27,9 @@ export const createUserBodySchema = z
       .string({ error: 'password is required' })
       .min(8, 'password must be at least 8 characters')
       // bcrypt ignores everything past 72 bytes, so longer passwords would be silently truncated.
-      .max(72, 'password must be at most 72 characters'),
+      .refine((password) => Buffer.byteLength(password, 'utf8') <= PASSWORD_MAX_BYTES, {
+        message: `password is too long: it must be at most ${PASSWORD_MAX_BYTES} bytes`,
+      }),
     name: nameSchema,
     role: roleSchema.optional(),
   })
