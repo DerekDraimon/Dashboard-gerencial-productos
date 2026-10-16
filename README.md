@@ -44,6 +44,8 @@ npm run db:up
 npm run dev:api
 ```
 
+Para crear los usuarios de prueba, ejecuta `npm run seed` con MongoDB levantado (ver [Credenciales de prueba](#credenciales-de-prueba)).
+
 `npm run dev` hace los pasos 3 y 4 en un solo comando. Para detener MongoDB: `npm run db:down` (los datos se conservan en el volumen).
 
 Comprobación rápida: `GET http://localhost:4000/api/health` responde `200 { "status": "ok", "database": "connected" }`. Si MongoDB no está disponible, la API sigue arrancada, reintenta la conexión en segundo plano y responde `503 { "status": "degraded", "database": "disconnected" }`.
@@ -75,7 +77,34 @@ Se leen de `backend/.env` (ver `backend/.env.example`). Al arrancar se validan y
 
 ## Credenciales de prueba
 
-_Pendiente: usuarios de prueba para los roles `ADMIN` y `USER`._
+Con MongoDB levantado y `backend/.env` creado, el seed crea un usuario por rol:
+
+```bash
+npm run seed
+```
+
+| Rol     | Email                  | Contraseña (por defecto en `.env.example`) |
+| ------- | ---------------------- | ------------------------------------------ |
+| `ADMIN` | `admin@dashboard.test` | `Admin123!` (`SEED_ADMIN_PASSWORD`)        |
+| `USER`  | `user@dashboard.test`  | `User1234!` (`SEED_USER_PASSWORD`)         |
+
+Las contraseñas se leen de `SEED_ADMIN_PASSWORD` y `SEED_USER_PASSWORD` (mínimo 8 caracteres); si falta alguna, el seed termina indicando cuál. Es idempotente: si un email ya existe, lo omite sin modificarlo, así que ejecutarlo varias veces mantiene los mismos 2 usuarios. Para cambiar la contraseña de una cuenta ya creada, elimina ese usuario de la base de datos y vuelve a ejecutar el seed.
+
+## API
+
+Todas las rutas están bajo `/api`. Los errores siguen el formato `{ "error": { "code", "message", "details"? } }`; las rutas que usan la base de datos responden `503 DATABASE_UNAVAILABLE` si MongoDB no está disponible.
+
+### Usuarios
+
+| Método  | Ruta                    | Descripción                                                                                        |
+| ------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `GET`   | `/api/users`            | Lista paginada, más recientes primero. Query: `offset` (0), `limit` (10, máx. 100), `active`       |
+| `GET`   | `/api/users/:id`        | Detalle de un usuario                                                                              |
+| `POST`  | `/api/users`            | Crea un usuario: `{ email, password, name, role? }` (`role`: `ADMIN` o `USER`, por defecto `USER`) |
+| `PATCH` | `/api/users/:id`        | Actualiza `{ name?, role?, active? }` (al menos un campo)                                          |
+| `PATCH` | `/api/users/:id/status` | Inactiva o reactiva sin eliminar: `{ active }`                                                     |
+
+La lista responde `{ data, meta: { total, offset, limit } }`. Las contraseñas se guardan con bcrypt y nunca se devuelven. Errores principales: `400 VALIDATION_ERROR` (con `details: [{ path, message }]`, también si `limit` supera 100 o el body trae campos no permitidos como `password` o `email` en el `PATCH`), `400 INVALID_ID`, `404 USER_NOT_FOUND` y `409 EMAIL_ALREADY_EXISTS` (el email no distingue mayúsculas).
 
 ## Colección de Postman
 
