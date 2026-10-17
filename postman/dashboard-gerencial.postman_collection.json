@@ -1,0 +1,1088 @@
+{
+  "info": {
+    "_postman_id": "6b1f3c2e-8d4a-4e7b-9f10-2a5c7d9e1b34",
+    "name": "Dashboard gerencial de productos",
+    "description": "Requests and response checks for the Dashboard gerencial de productos API. Run it in order with the \"Local\" environment: it logs in, exercises products and users, deletes the product it creates and leaves the user it creates inactive.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 Health",
+      "item": [
+        {
+          "name": "Health check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('API and database are up', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "  pm.expect(json.database).to.eql('connected');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 Auth",
+      "item": [
+        {
+          "name": "Login as ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body has a token and the ADMIN user', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.user).to.be.an('object');",
+                  "  pm.expect(json.user.role).to.eql('ADMIN');",
+                  "  pm.expect(json.user.active).to.eql(true);",
+                  "  pm.expect(json.user).to.not.have.property('password');",
+                  "  pm.environment.set('adminToken', json.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login as USER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body has a token and the USER user', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.user).to.be.an('object');",
+                  "  pm.expect(json.user.role).to.eql('USER');",
+                  "  pm.expect(json.user.active).to.eql(true);",
+                  "  pm.expect(json.user).to.not.have.property('password');",
+                  "  pm.environment.set('userToken', json.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login with wrong password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('Error body has code INVALID_CREDENTIALS and a message', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('error').that.is.an('object');",
+                  "  pm.expect(json.error.code).to.eql('INVALID_CREDENTIALS');",
+                  "  pm.expect(json.error.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No token is returned', function () {",
+                  "  pm.expect(pm.response.json()).to.not.have.property('token');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"wrong-password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get current user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectUser(user) {",
+                  "  pm.expect(user).to.be.an('object');",
+                  "  pm.expect(user.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(user.email).to.be.a('string');",
+                  "  pm.expect(user.name).to.be.a('string');",
+                  "  pm.expect(user.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "  pm.expect(user.active).to.be.a('boolean');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Current user is the ADMIN', function () {",
+                  "  const json = pm.response.json();",
+                  "  expectUser(json);",
+                  "  pm.expect(json.role).to.eql('ADMIN');",
+                  "  pm.expect(json.email).to.eql(pm.environment.get('adminEmail').toLowerCase());",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Products",
+      "item": [
+        {
+          "name": "List products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectProduct(product) {",
+                  "  pm.expect(product).to.be.an('object');",
+                  "  pm.expect(product.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(product.title).to.be.a('string');",
+                  "  pm.expect(product.description).to.be.a('string');",
+                  "  pm.expect(product.price).to.be.a('number');",
+                  "  pm.expect(product.category).to.be.a('string');",
+                  "  pm.expect(product.images).to.be.an('array');",
+                  "  pm.expect(product.stock).to.be.a('number');",
+                  "  pm.expect(product.creationAt).to.be.a('string');",
+                  "  pm.expect(product.updatedAt).to.be.a('string');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body is a page with data and meta', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.meta).to.be.an('object');",
+                  "  pm.expect(json.meta.total).to.be.a('number');",
+                  "  pm.expect(json.meta.offset).to.be.a('number');",
+                  "  pm.expect(json.meta.limit).to.be.a('number');",
+                  "  pm.expect(json.data.length).to.be.at.most(json.meta.limit);",
+                  "  json.data.forEach(expectProduct);",
+                  "});",
+                  "pm.test('Pagination echoes offset and limit', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.meta.offset).to.eql(0);",
+                  "  pm.expect(json.meta.limit).to.eql(5);",
+                  "  pm.expect(json.meta.total).to.be.above(0);",
+                  "});",
+                  "pm.test('Products are sorted by creationAt, newest first', function () {",
+                  "  const dates = pm.response.json().data.map((p) => Date.parse(p.creationAt));",
+                  "  for (let i = 1; i < dates.length; i++) {",
+                  "    pm.expect(dates[i - 1]).to.be.at.least(dates[i]);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?offset=0&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search products by title",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectProduct(product) {",
+                  "  pm.expect(product).to.be.an('object');",
+                  "  pm.expect(product.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(product.title).to.be.a('string');",
+                  "  pm.expect(product.description).to.be.a('string');",
+                  "  pm.expect(product.price).to.be.a('number');",
+                  "  pm.expect(product.category).to.be.a('string');",
+                  "  pm.expect(product.images).to.be.an('array');",
+                  "  pm.expect(product.stock).to.be.a('number');",
+                  "  pm.expect(product.creationAt).to.be.a('string');",
+                  "  pm.expect(product.updatedAt).to.be.a('string');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body is a page with data and meta', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.meta).to.be.an('object');",
+                  "  pm.expect(json.meta.total).to.be.a('number');",
+                  "  pm.expect(json.meta.offset).to.be.a('number');",
+                  "  pm.expect(json.meta.limit).to.be.a('number');",
+                  "  pm.expect(json.data.length).to.be.at.most(json.meta.limit);",
+                  "  json.data.forEach(expectProduct);",
+                  "});",
+                  "pm.test('Every title contains the search term (case-insensitive)', function () {",
+                  "  const term = pm.request.url.query.get('search').toLowerCase();",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.length).to.be.above(0);",
+                  "  json.data.forEach((p) => pm.expect(p.title.toLowerCase()).to.include(term));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?search=MOUSE",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "MOUSE"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Filter products by creation date",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Window of the last 90 days (UTC) up to today, so it includes the seeded products.",
+                  "const day = 24 * 60 * 60 * 1000;",
+                  "const today = new Date();",
+                  "pm.variables.set('toDate', today.toISOString().slice(0, 10));",
+                  "pm.variables.set('fromDate', new Date(today.getTime() - 90 * day).toISOString().slice(0, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectProduct(product) {",
+                  "  pm.expect(product).to.be.an('object');",
+                  "  pm.expect(product.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(product.title).to.be.a('string');",
+                  "  pm.expect(product.description).to.be.a('string');",
+                  "  pm.expect(product.price).to.be.a('number');",
+                  "  pm.expect(product.category).to.be.a('string');",
+                  "  pm.expect(product.images).to.be.an('array');",
+                  "  pm.expect(product.stock).to.be.a('number');",
+                  "  pm.expect(product.creationAt).to.be.a('string');",
+                  "  pm.expect(product.updatedAt).to.be.a('string');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body is a page with data and meta', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.meta).to.be.an('object');",
+                  "  pm.expect(json.meta.total).to.be.a('number');",
+                  "  pm.expect(json.meta.offset).to.be.a('number');",
+                  "  pm.expect(json.meta.limit).to.be.a('number');",
+                  "  pm.expect(json.data.length).to.be.at.most(json.meta.limit);",
+                  "  json.data.forEach(expectProduct);",
+                  "});",
+                  "pm.test('Every creationAt is inside the from/to window', function () {",
+                  "  const from = Date.parse(pm.variables.get('fromDate') + 'T00:00:00.000Z');",
+                  "  const to = Date.parse(pm.variables.get('toDate') + 'T23:59:59.999Z');",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.length).to.be.above(0);",
+                  "  json.data.forEach((p) => pm.expect(Date.parse(p.creationAt)).to.be.within(from, to));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?from={{fromDate}}&to={{toDate}}&limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{fromDate}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{toDate}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Categories are unique strings sorted alphabetically', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('array').that.is.not.empty;",
+                  "  json.forEach((c) => pm.expect(c).to.be.a('string'));",
+                  "  pm.expect(new Set(json).size).to.eql(json.length);",
+                  "  const sorted = [...json].sort((a, b) => a.localeCompare(b));",
+                  "  pm.expect(json).to.eql(sorted);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create product (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectProduct(product) {",
+                  "  pm.expect(product).to.be.an('object');",
+                  "  pm.expect(product.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(product.title).to.be.a('string');",
+                  "  pm.expect(product.description).to.be.a('string');",
+                  "  pm.expect(product.price).to.be.a('number');",
+                  "  pm.expect(product.category).to.be.a('string');",
+                  "  pm.expect(product.images).to.be.an('array');",
+                  "  pm.expect(product.stock).to.be.a('number');",
+                  "  pm.expect(product.creationAt).to.be.a('string');",
+                  "  pm.expect(product.updatedAt).to.be.a('string');",
+                  "}",
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Created product matches the payload', function () {",
+                  "  const sent = JSON.parse(pm.request.body.raw);",
+                  "  const json = pm.response.json();",
+                  "  expectProduct(json);",
+                  "  ['title', 'description', 'price', 'category', 'images', 'stock'].forEach((key) => {",
+                  "    pm.expect(json[key]).to.eql(sent[key]);",
+                  "  });",
+                  "  pm.environment.set('productId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Product\",\n  \"description\": \"Product created by the Postman collection; it is deleted at the end of the run.\",\n  \"price\": 49.99,\n  \"category\": \"Electronics\",\n  \"images\": [\n    \"https://example.com/images/postman-test-product.jpg\"\n  ],\n  \"stock\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get product by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectProduct(product) {",
+                  "  pm.expect(product).to.be.an('object');",
+                  "  pm.expect(product.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(product.title).to.be.a('string');",
+                  "  pm.expect(product.description).to.be.a('string');",
+                  "  pm.expect(product.price).to.be.a('number');",
+                  "  pm.expect(product.category).to.be.a('string');",
+                  "  pm.expect(product.images).to.be.an('array');",
+                  "  pm.expect(product.stock).to.be.a('number');",
+                  "  pm.expect(product.creationAt).to.be.a('string');",
+                  "  pm.expect(product.updatedAt).to.be.a('string');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns the created product', function () {",
+                  "  const json = pm.response.json();",
+                  "  expectProduct(json);",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('productId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update product (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectProduct(product) {",
+                  "  pm.expect(product).to.be.an('object');",
+                  "  pm.expect(product.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(product.title).to.be.a('string');",
+                  "  pm.expect(product.description).to.be.a('string');",
+                  "  pm.expect(product.price).to.be.a('number');",
+                  "  pm.expect(product.category).to.be.a('string');",
+                  "  pm.expect(product.images).to.be.an('array');",
+                  "  pm.expect(product.stock).to.be.a('number');",
+                  "  pm.expect(product.creationAt).to.be.a('string');",
+                  "  pm.expect(product.updatedAt).to.be.a('string');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Updated fields match the payload', function () {",
+                  "  const sent = JSON.parse(pm.request.body.raw);",
+                  "  const json = pm.response.json();",
+                  "  expectProduct(json);",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('productId'));",
+                  "  Object.keys(sent).forEach((key) => pm.expect(json[key]).to.eql(sent[key]));",
+                  "  pm.expect(json.category).to.eql('Electronics');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Product (updated)\",\n  \"price\": 59.5,\n  \"stock\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create product as USER is forbidden",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 403', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test('Error body has code FORBIDDEN and a message', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('error').that.is.an('object');",
+                  "  pm.expect(json.error.code).to.eql('FORBIDDEN');",
+                  "  pm.expect(json.error.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Product\",\n  \"description\": \"Product created by the Postman collection; it is deleted at the end of the run.\",\n  \"price\": 49.99,\n  \"category\": \"Electronics\",\n  \"images\": [\n    \"https://example.com/images/postman-test-product.jpg\"\n  ],\n  \"stock\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create product with invalid payload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error body has code VALIDATION_ERROR and a message', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('error').that.is.an('object');",
+                  "  pm.expect(json.error.code).to.eql('VALIDATION_ERROR');",
+                  "  pm.expect(json.error.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('Details list each invalid field', function () {",
+                  "  const details = pm.response.json().error.details;",
+                  "  pm.expect(details).to.be.an('array').that.is.not.empty;",
+                  "  details.forEach((d) => {",
+                  "    pm.expect(d).to.have.property('path');",
+                  "    pm.expect(d.message).to.be.a('string');",
+                  "  });",
+                  "  const paths = details.map((d) => String(d.path));",
+                  "  ['title', 'price', 'category', 'stock'].forEach((field) => pm.expect(paths).to.include(field));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"description\": \"Missing category and negative price\",\n  \"price\": -10,\n  \"stock\": 1.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete product (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});",
+                  "pm.test('Body is empty', function () {",
+                  "  pm.expect(pm.response.text()).to.eql('');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get deleted product returns 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Error body has code PRODUCT_NOT_FOUND and a message', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('error').that.is.an('object');",
+                  "  pm.expect(json.error.code).to.eql('PRODUCT_NOT_FOUND');",
+                  "  pm.expect(json.error.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Users",
+      "item": [
+        {
+          "name": "List active users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectUser(user) {",
+                  "  pm.expect(user).to.be.an('object');",
+                  "  pm.expect(user.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(user.email).to.be.a('string');",
+                  "  pm.expect(user.name).to.be.a('string');",
+                  "  pm.expect(user.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "  pm.expect(user.active).to.be.a('boolean');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Body is a page with data and meta', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.meta).to.be.an('object');",
+                  "  pm.expect(json.meta.total).to.be.a('number');",
+                  "  pm.expect(json.meta.offset).to.be.a('number');",
+                  "  pm.expect(json.meta.limit).to.be.a('number');",
+                  "  pm.expect(json.data.length).to.be.at.most(json.meta.limit);",
+                  "  json.data.forEach(expectUser);",
+                  "});",
+                  "pm.test('Every user is active', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.length).to.be.above(0);",
+                  "  json.data.forEach((u) => pm.expect(u.active).to.eql(true));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?active=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "active",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create user",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Unique email per run so the collection can be run repeatedly.",
+                  "pm.variables.set('newUserEmail', 'qa+' + Date.now() + '@dashboard.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectUser(user) {",
+                  "  pm.expect(user).to.be.an('object');",
+                  "  pm.expect(user.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(user.email).to.be.a('string');",
+                  "  pm.expect(user.name).to.be.a('string');",
+                  "  pm.expect(user.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "  pm.expect(user.active).to.be.a('boolean');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "}",
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Created user matches the payload', function () {",
+                  "  const json = pm.response.json();",
+                  "  expectUser(json);",
+                  "  pm.expect(json.email).to.eql(pm.variables.get('newUserEmail'));",
+                  "  pm.expect(json.name).to.eql('Postman QA User');",
+                  "  pm.expect(json.role).to.eql('USER');",
+                  "  pm.expect(json.active).to.eql(true);",
+                  "  pm.environment.set('userId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"Postman123!\",\n  \"name\": \"Postman QA User\",\n  \"role\": \"USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectUser(user) {",
+                  "  pm.expect(user).to.be.an('object');",
+                  "  pm.expect(user.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(user.email).to.be.a('string');",
+                  "  pm.expect(user.name).to.be.a('string');",
+                  "  pm.expect(user.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "  pm.expect(user.active).to.be.a('boolean');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Name is updated', function () {",
+                  "  const json = pm.response.json();",
+                  "  expectUser(json);",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('userId'));",
+                  "  pm.expect(json.name).to.eql('Postman QA User (updated)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman QA User (updated)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectUser(user) {",
+                  "  pm.expect(user).to.be.an('object');",
+                  "  pm.expect(user.id).to.be.a('string').and.match(/^[a-f0-9]{24}$/);",
+                  "  pm.expect(user.email).to.be.a('string');",
+                  "  pm.expect(user.name).to.be.a('string');",
+                  "  pm.expect(user.role).to.be.oneOf(['ADMIN', 'USER']);",
+                  "  pm.expect(user.active).to.be.a('boolean');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('User is now inactive', function () {",
+                  "  const json = pm.response.json();",
+                  "  expectUser(json);",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('userId'));",
+                  "  pm.expect(json.active).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{adminToken}}",
+        "type": "string"
+      }
+    ]
+  }
+}
