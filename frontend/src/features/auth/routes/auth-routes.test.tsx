@@ -180,4 +180,21 @@ describe('auth routes', () => {
 
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
   });
+
+  it('lets the user leave the unavailable-session screen for the login', async () => {
+    localStorage.setItem(TOKEN_KEY, 'stored-token');
+    replies['GET /auth/me'] = 'network';
+    const router = renderAt('/dashboard');
+
+    const leave = await screen.findByRole('button', { name: 'Ir al inicio de sesión' });
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.getByText('No pudimos verificar tu sesión')).toBeInTheDocument();
+
+    await userEvent.click(leave);
+
+    expect(await screen.findByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/login');
+    expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+    expect(screen.queryByText('No pudimos verificar tu sesión')).not.toBeInTheDocument();
+  });
 });

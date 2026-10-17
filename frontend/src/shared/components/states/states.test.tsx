@@ -51,6 +51,24 @@ describe('ErrorState', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  it('renders an optional secondary action next to Reintentar', async () => {
+    const onRetry = vi.fn();
+    const onSecondary = vi.fn();
+    render(
+      <ErrorState
+        error={new Error('boom')}
+        onRetry={onRetry}
+        secondaryAction={{ label: 'Volver', onClick: onSecondary }}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Volver' }));
+
+    expect(onSecondary).toHaveBeenCalledTimes(1);
+    expect(onRetry).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+  });
+
   it('shows the connection message for NETWORK_ERROR', () => {
     render(<ErrorState error={new ApiError(0, 'NETWORK_ERROR', 'Network Error')} />);
 

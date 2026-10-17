@@ -4,7 +4,7 @@ import { LOGIN_PATH, ProtectedRoute } from '../features/auth/routes/ProtectedRou
 import { PublicOnlyRoute } from '../features/auth/routes/PublicOnlyRoute';
 import { RequireRole } from '../features/auth/routes/RequireRole';
 import { LoginPage } from '../features/auth/views/LoginPage';
-import { DashboardPage } from '../features/dashboard/DashboardPage';
+import { LazyDashboardPage } from '../features/dashboard/views/LazyDashboardPage';
 import { InventoryPage } from '../features/products/InventoryPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { HOME_PATH, NAVIGATION_ITEMS, type NavigationId } from '../shared/layout/navigation';
@@ -12,7 +12,7 @@ import { NotFoundPage } from '../shared/pages/NotFoundPage';
 import { SessionLayout } from './SessionLayout';
 
 const PAGES: Record<NavigationId, ReactElement> = {
-  dashboard: <DashboardPage />,
+  dashboard: <LazyDashboardPage />,
   inventory: <InventoryPage />,
   users: <UsersPage />,
 };
