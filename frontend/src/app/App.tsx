@@ -1,7 +1,14 @@
+import Typography from '@mui/material/Typography';
+import { AppProviders } from './providers';
+
 export function App() {
   return (
-    <main>
-      <h1>Dashboard gerencial</h1>
-    </main>
+    <AppProviders>
+      <main>
+        <Typography variant="h4" component="h1">
+          Dashboard gerencial
+        </Typography>
+      </main>
+    </AppProviders>
   );
 }

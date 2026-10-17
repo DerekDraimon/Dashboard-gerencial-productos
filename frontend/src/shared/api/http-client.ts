@@ -1,0 +1,76 @@
+import axios, { isAxiosError } from 'axios';
+import { ApiError } from './api-error';
+
+const NETWORK_ERROR_MESSAGE =
+  'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
+const UNEXPECTED_ERROR_MESSAGE = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+
+export interface HttpAuthHooks {
+  getToken: () => string | null;
+  onUnauthorized: (error: ApiError) => void;
+}
+
+let authHooks: HttpAuthHooks = {
+  getToken: () => null,
+  onUnauthorized: () => undefined,
+};
+
+export function configureHttpAuth(hooks: Partial<HttpAuthHooks>): void {
+  authHooks = { ...authHooks, ...hooks };
+}
+
+export const httpClient = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? '/api',
+});
+
+httpClient.interceptors.request.use((config) => {
+  const token = authHooks.getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+httpClient.interceptors.response.use(undefined, (error: unknown) => {
+  const apiError = toApiError(error);
+  if (apiError.status === 401) {
+    authHooks.onUnauthorized(apiError);
+  }
+  return Promise.reject(apiError);
+});
+
+interface BackendErrorBody {
+  error: { code: string; message: string; details?: unknown };
+}
+
+function isBackendErrorBody(data: unknown): data is BackendErrorBody {
+  if (typeof data !== 'object' || data === null || !('error' in data)) {
+    return false;
+  }
+  const { error } = data;
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string' &&
+    'message' in error &&
+    typeof error.message === 'string'
+  );
+}
+
+export function toApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) {
+    return error;
+  }
+  if (!isAxiosError(error)) {
+    return new ApiError(0, 'UNEXPECTED_ERROR', UNEXPECTED_ERROR_MESSAGE);
+  }
+  if (!error.response) {
+    return new ApiError(0, 'NETWORK_ERROR', NETWORK_ERROR_MESSAGE);
+  }
+  const { status, data } = error.response;
+  if (isBackendErrorBody(data)) {
+    return new ApiError(status, data.error.code, data.error.message, data.error.details);
+  }
+  return new ApiError(status, 'HTTP_ERROR', UNEXPECTED_ERROR_MESSAGE);
+}
