@@ -17,7 +17,7 @@ Aplicación fullstack para gestionar el inventario de productos de una tienda, c
 ```
 .
 ├── backend/    # API REST (Express + TypeScript + Mongoose)
-├── frontend/   # Dashboard (React + Material UI)
+├── frontend/   # Dashboard (React + Vite + TypeScript + Material UI)
 └── postman/    # Colección de Postman exportada (.json)
 ```
 
@@ -37,31 +37,44 @@ npm install
 # 2. Crear el archivo de entorno del backend y ajustarlo si hace falta
 cp backend/.env.example backend/.env
 
-# 3. Levantar MongoDB en Docker (puerto 27017, datos en un volumen con nombre)
-npm run db:up
-
-# 4. Arrancar la API en modo desarrollo con recarga (http://localhost:4000)
-npm run dev:api
+# 3. Levantar MongoDB, la API y el frontend en modo desarrollo
+npm run dev
 ```
+
+`npm run dev` levanta MongoDB en Docker (puerto 27017, datos en un volumen con nombre) y arranca en paralelo, con recarga, la API (`api`, http://localhost:4000) y el frontend (`web`, http://localhost:5173). Abre http://localhost:5173 en el navegador.
+
+Para arrancar cada parte por separado:
+
+| Comando           | Descripción                                      |
+| ----------------- | ------------------------------------------------ |
+| `npm run db:up`   | Levanta solo MongoDB en Docker                   |
+| `npm run dev:api` | Arranca solo la API (http://localhost:4000)      |
+| `npm run dev:web` | Arranca solo el frontend (http://localhost:5173) |
 
 Para crear los usuarios de prueba y los productos de ejemplo, ejecuta `npm run seed` con MongoDB levantado (ver [Credenciales de prueba](#credenciales-de-prueba)).
 
-`npm run dev` hace los pasos 3 y 4 en un solo comando. Para detener MongoDB: `npm run db:down` (los datos se conservan en el volumen).
+Para detener MongoDB: `npm run db:down` (los datos se conservan en el volumen).
 
 Comprobación rápida: `GET http://localhost:4000/api/health` responde `200 { "status": "ok", "database": "connected" }`. Si MongoDB no está disponible, la API sigue arrancada, reintenta la conexión en segundo plano y responde `503 { "status": "degraded", "database": "disconnected" }`.
 
 Otros comandos:
 
-| Comando                        | Descripción                                                                         |
-| ------------------------------ | ----------------------------------------------------------------------------------- |
-| `npm run build`                | Compila TypeScript a `backend/dist/`                                                |
-| `npm start -w backend`         | Ejecuta la versión compilada (`node dist/server.js`)                                |
-| `npm test`                     | Ejecuta las pruebas (Vitest + Supertest con MongoDB en memoria; no requiere Docker) |
-| `npm run lint -w backend`      | Revisa el código con ESLint                                                         |
-| `npm run typecheck -w backend` | Verifica los tipos sin compilar                                                     |
-| `npm run format`               | Formatea el código con Prettier                                                     |
+| Comando                         | Descripción                                                           |
+| ------------------------------- | --------------------------------------------------------------------- |
+| `npm run build`                 | Compila el backend a `backend/dist/` y el frontend a `frontend/dist/` |
+| `npm start -w backend`          | Ejecuta la versión compilada de la API (`node dist/server.js`)        |
+| `npm test`                      | Ejecuta las pruebas de ambos workspaces (no requiere Docker)          |
+| `npm test -w backend`           | Pruebas de la API (Vitest + Supertest con MongoDB en memoria)         |
+| `npm test -w frontend`          | Pruebas del frontend (Vitest + Testing Library + jsdom)               |
+| `npm run lint`                  | Revisa el código de ambos workspaces con ESLint                       |
+| `npm run typecheck -w backend`  | Verifica los tipos de la API sin compilar                             |
+| `npm run typecheck -w frontend` | Verifica los tipos del frontend sin compilar                          |
+| `npm run preview -w frontend`   | Sirve el build del frontend para revisarlo localmente                 |
+| `npm run format`                | Formatea el código con Prettier                                       |
 
 ## Variables de entorno
+
+### Backend
 
 Se leen de `backend/.env` (ver `backend/.env.example`). Al arrancar se validan y, si falta una obligatoria o tiene un valor inválido, el proceso termina indicando qué variable falla.
 
@@ -76,6 +89,16 @@ Se leen de `backend/.env` (ver `backend/.env.example`). Al arrancar se validan y
 | `SEED_USER_PASSWORD`         | No          | —                       | Contraseña del usuario `USER` creado por el seed                                                    |
 | `LOGIN_RATE_LIMIT_WINDOW_MS` | No          | `900000`                | Ventana en milisegundos del límite de intentos de login (15 minutos)                                |
 | `LOGIN_RATE_LIMIT_MAX`       | No          | `10`                    | Intentos de login permitidos por IP en cada ventana                                                 |
+
+### Frontend
+
+El frontend no necesita archivo de entorno: en desarrollo llama a `/api` y Vite reenvía esas peticiones a la API en `http://localhost:4000`. Si la API está en otra dirección, crea `frontend/.env.local` con la variable:
+
+| Variable       | Obligatoria | Valor por defecto | Descripción                                                  |
+| -------------- | ----------- | ----------------- | ------------------------------------------------------------ |
+| `VITE_API_URL` | No          | `/api`            | URL base de la API (por ejemplo `http://localhost:4000/api`) |
+
+Si `VITE_API_URL` apunta directamente a la API (otro origen), la API debe permitir el origen del frontend en `CORS_ORIGIN` (por defecto `http://localhost:5173`).
 
 ## Credenciales de prueba
 
