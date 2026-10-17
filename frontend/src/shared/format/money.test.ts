@@ -33,4 +33,11 @@ describe('formatMoney', () => {
     expect(formatMoney('1234567.891')).toBe(`US$${NBSP}1.234.567,89`);
     expect(formatMoney(sumMoney([0.1, 0.2]))).toBe(`US$${NBSP}0,30`);
   });
+
+  it('shows a dash for invalid values instead of throwing', () => {
+    expect(formatMoney(Number.NaN)).toBe('—');
+    expect(formatMoney(Number.POSITIVE_INFINITY)).toBe('—');
+    expect(formatMoney('12,5 dólares')).toBe('—');
+    expect(formatMoney('')).toBe('—');
+  });
 });
