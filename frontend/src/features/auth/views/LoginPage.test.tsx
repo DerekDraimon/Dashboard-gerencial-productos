@@ -88,6 +88,19 @@ describe('LoginPage', () => {
     expect(router.state.location.search).toBe('?page=2');
   });
 
+  it.each(['//evil.example', '/\\evil.example', 'https://evil.example'])(
+    'ignores a from location that leaves the app (%s)',
+    async (pathname) => {
+      setViewport(true);
+      const router = renderLogin({ pathname: '/login', state: { from: { pathname } } });
+
+      await submitValidCredentials();
+
+      expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe('/dashboard');
+    },
+  );
+
   it('shows the showcase with shapes and pills on desktop', () => {
     setViewport(true);
     renderLogin();

@@ -3,24 +3,10 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { HOME_PATH } from '../../../shared/layout/navigation';
 import { LoginForm, type LoginCredentials } from '../components/LoginForm';
 import { LoginShowcase } from '../components/LoginShowcase';
 import { useAuth } from '../context/use-auth';
-
-function readString(source: object, key: string): string {
-  const value: unknown = (source as Record<string, unknown>)[key];
-  return typeof value === 'string' ? value : '';
-}
-
-function redirectTarget(state: unknown): string {
-  if (typeof state !== 'object' || state === null || !('from' in state)) return HOME_PATH;
-  const { from } = state;
-  if (typeof from !== 'object' || from === null) return HOME_PATH;
-  const pathname = readString(from, 'pathname');
-  if (!pathname.startsWith('/')) return HOME_PATH;
-  return `${pathname}${readString(from, 'search')}${readString(from, 'hash')}`;
-}
+import { redirectTarget } from '../routes/redirect-target';
 
 export function LoginPage() {
   const { login } = useAuth();
