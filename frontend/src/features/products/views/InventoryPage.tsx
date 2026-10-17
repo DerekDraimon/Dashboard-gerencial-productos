@@ -13,12 +13,13 @@ import { useAuth } from '../../auth/context/use-auth';
 import type { Product } from '../api/products-api';
 import { ProductDetailDrawer } from '../components/ProductDetailDrawer';
 import { ProductFilters } from '../components/ProductFilters';
+import { ProductFormDialog } from '../components/ProductFormDialog';
 import { ProductsTable } from '../components/ProductsTable';
 import { useProducts } from '../hooks/useProducts';
 
 const actionSx = { width: 44, height: 44, borderRadius: '10px' } as const;
 
-// U4 and U6 wire these handlers to the form dialog and the delete flow.
+// U6 wires these handlers to the edit dialog and the delete flow.
 const noop = () => undefined;
 
 export function InventoryPage() {
@@ -30,6 +31,7 @@ export function InventoryPage() {
   const { filters } = products;
   const hasFilters = Object.values(filters).some((value) => value !== '');
   const [detail, setDetail] = useState<Product | null>(null);
+  const [creating, setCreating] = useState(false);
 
   function renderActions(product: Product) {
     if (!isAdmin) {
@@ -66,7 +68,7 @@ export function InventoryPage() {
           {isPhone ? (
             <IconButton
               aria-label="Nuevo producto"
-              onClick={noop}
+              onClick={() => setCreating(true)}
               sx={{ ...actionSx, bgcolor: 'primary.main', color: 'primary.contrastText' }}
             >
               <AddIcon />
@@ -75,7 +77,7 @@ export function InventoryPage() {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={noop}
+              onClick={() => setCreating(true)}
               sx={{ px: 2.25, fontWeight: 700 }}
             >
               Nuevo producto
@@ -112,6 +114,14 @@ export function InventoryPage() {
         />
       )}
       <ProductDetailDrawer product={detail} onClose={() => setDetail(null)} />
+      {isAdmin && (
+        <ProductFormDialog
+          open={creating}
+          mode="create"
+          onClose={() => setCreating(false)}
+          onSaved={products.reload}
+        />
+      )}
     </Box>
   );
 }

@@ -5,6 +5,7 @@ import { AxiosError } from 'axios';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { httpClient } from '../../../shared/api/http-client';
 import type { UserRole } from '../../../shared/auth/user-role';
+import { NotificationProvider } from '../../../shared/feedback/NotificationProvider';
 import { AuthContext, type AuthContextValue } from '../../auth/context/auth-context';
 import type { Product } from '../api/products-api';
 import { InventoryPage } from './InventoryPage';
@@ -25,7 +26,20 @@ let failing: boolean;
 let requests: InternalAxiosRequestConfig[];
 
 const adapter: AxiosAdapter = async (config) => {
+  if (config.url === '/products/categories') {
+    return { status: 200, statusText: '', headers: {}, config, data: [] };
+  }
   requests.push(config);
+  if (config.method === 'post') {
+    const [base] = makeProducts(1) as [Product];
+    const created: Product = {
+      ...base,
+      id: 'new',
+      ...(JSON.parse(config.data as string) as object),
+    };
+    catalog = [created, ...catalog];
+    return { status: 201, statusText: '', headers: {}, config, data: created };
+  }
   if (failing) {
     const data = { error: { code: 'INTERNAL_ERROR', message: 'No se pudo cargar.' } };
     const response = { status: 500, statusText: '', headers: {}, config, data };
@@ -44,9 +58,11 @@ function renderPage(role: UserRole) {
     logout: () => undefined,
   };
   render(
-    <AuthContext.Provider value={auth}>
-      <InventoryPage />
-    </AuthContext.Provider>,
+    <NotificationProvider>
+      <AuthContext.Provider value={auth}>
+        <InventoryPage />
+      </AuthContext.Provider>
+    </NotificationProvider>,
   );
 }
 
@@ -68,6 +84,24 @@ describe('InventoryPage', () => {
     expect(screen.getAllByRole('button', { name: /^Editar / })).toHaveLength(10);
     expect(screen.getAllByRole('button', { name: /^Eliminar / })).toHaveLength(10);
     expect(screen.queryByRole('button', { name: /^Ver detalle/ })).not.toBeInTheDocument();
+  });
+
+  it('creates a product from Nuevo producto and reloads the list', async () => {
+    renderPage('ADMIN');
+    await loaded();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nuevo producto' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Nuevo producto' });
+    await userEvent.type(within(dialog).getByLabelText('Título'), 'Lámpara');
+    await userEvent.type(within(dialog).getByLabelText('Precio'), '15');
+    await userEvent.type(within(dialog).getByLabelText('Stock'), '2');
+    await userEvent.type(within(dialog).getByLabelText('Categoría'), 'Hogar');
+    await userEvent.type(within(dialog).getByLabelText('Descripción'), 'Lámpara de mesa');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar producto' }));
+
+    expect(await screen.findByText('Lámpara')).toBeInTheDocument();
+    expect(requests.filter((request) => request.method === 'get')).toHaveLength(2);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('gives USER only the detail action', async () => {
