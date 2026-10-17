@@ -60,7 +60,7 @@ beforeEach(() => {
     statusText: '',
     headers: {},
     config,
-    data: admin,
+    data: config.url === '/auth/me' ? admin : { data: [], meta: { total: 0 } },
   });
 });
 
