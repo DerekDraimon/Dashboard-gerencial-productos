@@ -7,11 +7,14 @@ export interface ProductImageProps {
   alt: string;
   size?: number | string;
   radius?: number;
+  /** Fills the container width with this ratio (e.g. "4 / 3") instead of a fixed square size. */
+  aspectRatio?: string;
 }
 
-export function ProductImage({ src, alt, size = 40, radius = 8 }: ProductImageProps) {
+export function ProductImage({ src, alt, size = 40, radius = 8, aspectRatio }: ProductImageProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const frame = { width: size, height: size, borderRadius: `${radius}px`, flex: 'none' };
+  const box = aspectRatio ? { width: '100%', aspectRatio } : { width: size, height: size };
+  const frame = { ...box, borderRadius: `${radius}px`, flex: 'none' };
 
   if (!src || failedSrc === src) {
     return (

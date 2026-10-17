@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
 import { AxiosError } from 'axios';
@@ -78,6 +78,23 @@ describe('InventoryPage', () => {
     expect(screen.queryByRole('button', { name: /^Editar / })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Eliminar / })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^Ver detalle/ })).toHaveLength(10);
+  });
+
+  it('opens the detail of the chosen row and closes it with the button or Escape', async () => {
+    renderPage('USER');
+    await loaded();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ver detalle de Producto 3' }));
+
+    const drawer = await screen.findByRole('dialog', { name: 'Producto 3' });
+    expect(within(drawer).getByText('Detalle del producto')).toBeInTheDocument();
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Cerrar detalle' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ver detalle de Producto 1' }));
+    expect(await screen.findByRole('dialog', { name: 'Producto 1' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('requests offset 10 for the next page', async () => {

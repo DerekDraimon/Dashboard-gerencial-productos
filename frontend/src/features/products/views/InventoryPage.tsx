@@ -7,16 +7,18 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { useState } from 'react';
 import { ErrorState } from '../../../shared/components/states';
 import { useAuth } from '../../auth/context/use-auth';
 import type { Product } from '../api/products-api';
+import { ProductDetailDrawer } from '../components/ProductDetailDrawer';
 import { ProductFilters } from '../components/ProductFilters';
 import { ProductsTable } from '../components/ProductsTable';
 import { useProducts } from '../hooks/useProducts';
 
 const actionSx = { width: 44, height: 44, borderRadius: '10px' } as const;
 
-// U3, U4 and U6 wire these handlers to the detail drawer, the form dialog and the delete flow.
+// U4 and U6 wire these handlers to the form dialog and the delete flow.
 const noop = () => undefined;
 
 export function InventoryPage() {
@@ -27,11 +29,16 @@ export function InventoryPage() {
   const products = useProducts();
   const { filters } = products;
   const hasFilters = Object.values(filters).some((value) => value !== '');
+  const [detail, setDetail] = useState<Product | null>(null);
 
   function renderActions(product: Product) {
     if (!isAdmin) {
       return (
-        <IconButton aria-label={`Ver detalle de ${product.title}`} onClick={noop} sx={actionSx}>
+        <IconButton
+          aria-label={`Ver detalle de ${product.title}`}
+          onClick={() => setDetail(product)}
+          sx={actionSx}
+        >
           <VisibilityOutlined fontSize="small" />
         </IconButton>
       );
@@ -104,6 +111,7 @@ export function InventoryPage() {
           renderActions={renderActions}
         />
       )}
+      <ProductDetailDrawer product={detail} onClose={() => setDetail(null)} />
     </Box>
   );
 }
