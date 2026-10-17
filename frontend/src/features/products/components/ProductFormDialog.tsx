@@ -139,8 +139,13 @@ export function ProductFormDialog(props: ProductFormDialogProps) {
   } = useForm<ProductFormValues>({ defaultValues: EMPTY_VALUES });
 
   const [attempt, setAttempt] = useState(0);
+  // Every opening gets its own load key, so a reopened dialog never shows the previous data.
+  const [opening, setOpening] = useState({ open, count: 0 });
+  if (opening.open !== open) {
+    setOpening((current) => ({ open, count: open ? current.count + 1 : current.count }));
+  }
   const [loaded, setLoaded] = useState<LoadedProduct>({ key: '', values: null, error: null });
-  const loadKey = productId === null ? '' : `${productId}:${attempt}`;
+  const loadKey = productId === null ? '' : `${productId}:${opening.count}:${attempt}`;
   const current = open && loaded.key === loadKey;
   const loadError = current ? loaded.error : null;
   const ready = productId === null || (current && loaded.values !== null);
@@ -238,75 +243,78 @@ export function ProductFormDialog(props: ProductFormDialogProps) {
         ) : (
           <LoadingState label="Cargando producto…" />
         ))}
-      <Box
-        hidden={!ready}
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 300px' },
-          gap: 3.5,
-        }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
-          <TextField label="Título" {...textField('title', requiredText('título', 120))} />
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-            <TextField
-              label="Precio"
-              {...textField('price', validatePrice)}
-              slotProps={{
-                htmlInput: { inputMode: 'decimal' },
-                input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
-              }}
+      {ready && (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 300px' },
+            gap: 3.5,
+          }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
+            <TextField label="Título" {...textField('title', requiredText('título', 120))} />
+            <Box
+              sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}
+            >
+              <TextField
+                label="Precio"
+                {...textField('price', validatePrice)}
+                slotProps={{
+                  htmlInput: { inputMode: 'decimal' },
+                  input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+                }}
+              />
+              <TextField
+                label="Stock"
+                {...textField('stock', validateStock)}
+                slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+              />
+            </Box>
+            <Controller
+              name="category"
+              control={control}
+              rules={{ validate: requiredText('categoría', 60, true) }}
+              render={({ field, fieldState }) => (
+                <Autocomplete
+                  freeSolo
+                  options={categories}
+                  inputValue={field.value}
+                  onInputChange={(_, value) => field.onChange(value)}
+                  onBlur={field.onBlur}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Categoría"
+                      error={Boolean(fieldState.error)}
+                      helperText={
+                        fieldState.error?.message ?? 'Elige una existente o escribe una nueva.'
+                      }
+                    />
+                  )}
+                />
+              )}
             />
             <TextField
-              label="Stock"
-              {...textField('stock', validateStock)}
-              slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+              label="Descripción"
+              multiline
+              minRows={3}
+              {...textField('description', requiredText('descripción', 2000, true))}
+            />
+            <Controller
+              name="images"
+              control={control}
+              render={({ field, fieldState }) => (
+                <ImageUrlsField
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={fieldState.error?.message}
+                />
+              )}
             />
           </Box>
-          <Controller
-            name="category"
-            control={control}
-            rules={{ validate: requiredText('categoría', 60, true) }}
-            render={({ field, fieldState }) => (
-              <Autocomplete
-                freeSolo
-                options={categories}
-                inputValue={field.value}
-                onInputChange={(_, value) => field.onChange(value)}
-                onBlur={field.onBlur}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Categoría"
-                    error={Boolean(fieldState.error)}
-                    helperText={
-                      fieldState.error?.message ?? 'Elige una existente o escribe una nueva.'
-                    }
-                  />
-                )}
-              />
-            )}
-          />
-          <TextField
-            label="Descripción"
-            multiline
-            minRows={3}
-            {...textField('description', requiredText('descripción', 2000, true))}
-          />
-          <Controller
-            name="images"
-            control={control}
-            render={({ field, fieldState }) => (
-              <ImageUrlsField
-                value={field.value}
-                onChange={field.onChange}
-                error={fieldState.error?.message}
-              />
-            )}
-          />
+          <ProductFormPreview control={control} />
         </Box>
-        <ProductFormPreview control={control} />
-      </Box>
+      )}
     </FormDialog>
   );
 }

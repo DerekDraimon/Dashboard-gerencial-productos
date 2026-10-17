@@ -23,14 +23,17 @@ const created: Product = {
 let posts: InternalAxiosRequestConfig[];
 let postError: { status: number; body: unknown } | null;
 let loadFails: boolean;
+let served: Product;
+let gets: number;
 
 const adapter: AxiosAdapter = async (config) => {
   if (config.url === '/products/categories') {
     return { status: 200, statusText: '', headers: {}, config, data: ['Hogar', 'Muebles'] };
   }
   if (config.method === 'get') {
+    gets += 1;
     if (loadFails) throw new AxiosError('Failed', AxiosError.ERR_NETWORK, config);
-    return { status: 200, statusText: '', headers: {}, config, data: created };
+    return { status: 200, statusText: '', headers: {}, config, data: served };
   }
   posts.push(config);
   if (postError) {
@@ -69,6 +72,8 @@ beforeEach(() => {
   posts = [];
   postError = null;
   loadFails = false;
+  served = created;
+  gets = 0;
   httpClient.defaults.adapter = adapter;
 });
 
@@ -365,11 +370,46 @@ describe('ProductFormDialog', () => {
       expect(onSaved).not.toHaveBeenCalled();
     });
 
+    it('keeps the fields out of the document while loading', () => {
+      renderEdit();
+
+      expect(screen.getByText('Cargando producto…')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Título')).not.toBeInTheDocument();
+    });
+
+    it('fetches the product again every time the dialog opens', async () => {
+      function Harness({ open }: { open: boolean }) {
+        return (
+          <NotificationProvider>
+            <ProductFormDialog
+              open={open}
+              mode="edit"
+              productId="p9"
+              onClose={() => undefined}
+              onSaved={() => undefined}
+            />
+          </NotificationProvider>
+        );
+      }
+      const { rerender } = render(<Harness open />);
+      await screen.findByDisplayValue('Silla');
+
+      rerender(<Harness open={false} />);
+      served = { ...created, title: 'Silla renovada' };
+      rerender(<Harness open />);
+
+      expect(screen.getByText('Cargando producto…')).toBeInTheDocument();
+      expect(screen.queryByDisplayValue('Silla')).not.toBeInTheDocument();
+      expect(await screen.findByDisplayValue('Silla renovada')).toBe(field('Título'));
+      expect(gets).toBe(2);
+    });
+
     it('shows the load error and retries', async () => {
       loadFails = true;
       renderEdit();
 
       const retry = await screen.findByRole('button', { name: 'Reintentar' });
+      expect(screen.queryByLabelText('Título')).not.toBeInTheDocument();
       loadFails = false;
       await userEvent.click(retry);
 
