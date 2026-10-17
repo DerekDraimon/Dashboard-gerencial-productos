@@ -19,6 +19,13 @@ function Trigger() {
       >
         Ambos
       </button>
+      <button
+        onClick={() => {
+          for (let index = 1; index <= 7; index += 1) notify.success(`Aviso ${index}`);
+        }}
+      >
+        Muchos
+      </button>
     </>
   );
 }
@@ -65,5 +72,23 @@ describe('useNotify', () => {
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No se pudo guardar'));
     expect(screen.getByRole('alert')).toHaveClass('MuiAlert-colorError');
+  });
+
+  it('keeps at most 5 pending notifications and drops the oldest', async () => {
+    renderTrigger();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Muchos' }));
+
+    const shown: string[] = [];
+    for (let step = 0; step < 6; step += 1) {
+      const alert = await screen.findByRole('alert');
+      const text = alert.textContent;
+      shown.push(text);
+      await userEvent.click(within(alert).getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(screen.queryByRole('alert')?.textContent).not.toBe(text));
+    }
+
+    expect(shown).toEqual(['Aviso 1', 'Aviso 3', 'Aviso 4', 'Aviso 5', 'Aviso 6', 'Aviso 7']);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

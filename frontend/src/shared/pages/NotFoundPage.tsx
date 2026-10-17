@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
+import { HOME_PATH } from '../layout/navigation';
 
 export function NotFoundPage() {
   return (
@@ -26,7 +27,7 @@ export function NotFoundPage() {
         Página no encontrada
       </Typography>
       <Typography color="text.secondary">La página que buscas no existe o fue movida.</Typography>
-      <Button component={RouterLink} to="/dashboard" variant="contained">
+      <Button component={RouterLink} to={HOME_PATH} variant="contained">
         Volver al dashboard
       </Button>
     </Box>
