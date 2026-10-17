@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "description": "Product inventory management dashboard (monorepo: backend + frontend).",
   "workspaces": [
-    "backend"
+    "backend",
+    "frontend"
   ],
   "scripts": {
     "dev": "npm run db:up && concurrently -n api -c blue \"npm:dev:api\"",
