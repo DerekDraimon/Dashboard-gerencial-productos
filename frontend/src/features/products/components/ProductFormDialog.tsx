@@ -9,6 +9,8 @@ import { FormDialog } from '../../../shared/components/form-dialog';
 import { useNotify } from '../../../shared/feedback/use-notify';
 import { createProduct, type Product, type ProductInput } from '../api/products-api';
 import { useCategories } from '../hooks/useCategories';
+import { ImageUrlsField } from './ImageUrlsField';
+import { ProductFormPreview } from './ProductFormPreview';
 
 export interface ProductFormValues {
   title: string;
@@ -193,8 +195,19 @@ export function ProductFormDialog({ open, onClose, onSaved }: ProductFormDialogP
             minRows={3}
             {...textField('description', requiredText('descripción', 2000, true))}
           />
+          <Controller
+            name="images"
+            control={control}
+            render={({ field, fieldState }) => (
+              <ImageUrlsField
+                value={field.value}
+                onChange={field.onChange}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
         </Box>
-        <Box data-slot="product-preview" />
+        <ProductFormPreview control={control} />
       </Box>
     </FormDialog>
   );

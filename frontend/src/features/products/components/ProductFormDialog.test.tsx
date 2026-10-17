@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
 import { AxiosError } from 'axios';
@@ -181,5 +181,81 @@ describe('ProductFormDialog', () => {
     await userEvent.type(field('Categoría'), 'Jardín');
     await userEvent.keyboard('{Escape}');
     expect(field('Categoría')).toHaveValue('Jardín');
+  });
+
+  describe('images and preview', () => {
+    const preview = () => screen.getByRole('complementary', { name: 'Vista previa del detalle' });
+
+    async function addImage(url: string) {
+      await userEvent.type(field('URL de imagen'), url);
+      await userEvent.click(screen.getByRole('button', { name: 'Agregar' }));
+    }
+
+    it('reflects the typed title, price and category in the preview', async () => {
+      renderDialog();
+
+      await userEvent.type(field('Título'), 'Lámpara');
+      await userEvent.type(field('Precio'), '15');
+      await userEvent.type(field('Categoría'), 'Hogar');
+
+      expect(within(preview()).getByRole('heading', { name: 'Lámpara' })).toBeInTheDocument();
+      expect(preview()).toHaveTextContent(/US\$\s15,00/);
+      expect(within(preview()).getByText('Hogar')).toBeInTheDocument();
+      expect(within(preview()).getAllByText('Al guardar')).toHaveLength(2);
+    });
+
+    it('shows an added url in the list and in the preview', async () => {
+      renderDialog();
+      await userEvent.type(field('Título'), 'Lámpara');
+
+      await addImage('https://example.com/a.png');
+
+      expect(screen.getByRole('list', { name: 'Imágenes agregadas' })).toHaveTextContent(
+        'https://example.com/a.png',
+      );
+      expect(within(preview()).getByRole('img', { name: 'Lámpara' })).toHaveAttribute(
+        'src',
+        'https://example.com/a.png',
+      );
+    });
+
+    it('adds with Enter in the url input without submitting the form', async () => {
+      renderDialog();
+
+      await userEvent.type(field('URL de imagen'), 'https://example.com/a.png{Enter}');
+
+      expect(screen.getByRole('list', { name: 'Imágenes agregadas' })).toHaveTextContent(
+        'https://example.com/a.png',
+      );
+      expect(screen.queryByText('El título es obligatorio.')).not.toBeInTheDocument();
+      expect(posts).toHaveLength(0);
+    });
+
+    it('shows No carga and the preview placeholder for a broken image', async () => {
+      renderDialog();
+      await userEvent.type(field('Título'), 'Lámpara');
+      await addImage('https://example.com/rota.png');
+
+      document
+        .querySelectorAll('img[src="https://example.com/rota.png"]')
+        .forEach((image) => fireEvent.error(image));
+
+      expect(screen.getByText('No carga')).toBeInTheDocument();
+      expect(within(preview()).getByRole('img', { name: 'Lámpara' }).tagName).not.toBe('IMG');
+    });
+
+    it('sends the images array on submit', async () => {
+      const { onSaved } = renderDialog();
+      await fillValid();
+      await addImage('https://example.com/a.png');
+      await addImage('https://example.com/b.png');
+
+      await save();
+
+      await waitFor(() => expect(onSaved).toHaveBeenCalled());
+      expect(JSON.parse(posts[0]?.data as string)).toMatchObject({
+        images: ['https://example.com/a.png', 'https://example.com/b.png'],
+      });
+    });
   });
 });
