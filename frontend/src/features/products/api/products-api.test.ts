@@ -108,6 +108,15 @@ describe('product mutations and lookups', () => {
     expect(lastRequest()).toEqual(['delete', '/api/products/p1', null]);
   });
 
+  it('encodes the id in every product path', async () => {
+    await getProduct('a/b?c');
+    expect(lastRequest()[1]).toBe('/api/products/a%2Fb%3Fc');
+    await updateProduct('a/b?c', { stock: 1 });
+    expect(lastRequest()[1]).toBe('/api/products/a%2Fb%3Fc');
+    await deleteProduct('a/b?c');
+    expect(lastRequest()[1]).toBe('/api/products/a%2Fb%3Fc');
+  });
+
   it('listCategories returns the category names', async () => {
     responseData = ['Hogar', 'Muebles'];
 

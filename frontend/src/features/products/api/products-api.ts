@@ -53,7 +53,7 @@ export interface ProductInput {
 }
 
 export async function getProduct(id: string, { signal }: RequestOptions = {}): Promise<Product> {
-  const response = await httpClient.get<Product>(`/products/${id}`, { signal });
+  const response = await httpClient.get<Product>(`/products/${encodeURIComponent(id)}`, { signal });
   return response.data;
 }
 
@@ -63,12 +63,12 @@ export async function createProduct(input: ProductInput): Promise<Product> {
 }
 
 export async function updateProduct(id: string, patch: Partial<ProductInput>): Promise<Product> {
-  const response = await httpClient.patch<Product>(`/products/${id}`, patch);
+  const response = await httpClient.patch<Product>(`/products/${encodeURIComponent(id)}`, patch);
   return response.data;
 }
 
 export async function deleteProduct(id: string): Promise<void> {
-  await httpClient.delete(`/products/${id}`);
+  await httpClient.delete(`/products/${encodeURIComponent(id)}`);
 }
 
 export async function listCategories({ signal }: RequestOptions = {}): Promise<string[]> {

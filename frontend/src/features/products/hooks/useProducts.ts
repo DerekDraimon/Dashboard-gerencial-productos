@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '../../../shared/api/api-error';
 import { useDebouncedValue, usePagination } from '../../../shared/hooks';
 import { listProducts, type Product } from '../api/products-api';
@@ -26,9 +26,14 @@ export function useProducts() {
   const [attempt, setAttempt] = useState(0);
   const [page, setPage] = useState<PageState>({ key: '', rows: [], total: 0, error: null });
 
-  const debouncedSearch = useDebouncedValue(filters.search, 300);
-  // Clearing the search applies at once; only typing waits for the debounce.
-  const search = filters.search === '' ? '' : debouncedSearch.trim();
+  // Each clear starts a new epoch, so a debounced value typed before it can never apply afterwards.
+  const [searchEpoch, setSearchEpoch] = useState(0);
+  const typed = useMemo(
+    () => ({ search: filters.search.trim(), epoch: searchEpoch }),
+    [filters.search, searchEpoch],
+  );
+  const debounced = useDebouncedValue(typed, 300);
+  const search = debounced.epoch === searchEpoch ? debounced.search : '';
   const { from, to } = filters;
   const dateRangeError = from !== '' && to !== '' && from > to;
 
@@ -61,6 +66,7 @@ export function useProducts() {
 
   const setSearch = useCallback((value: string) => {
     setFilters((current) => ({ ...current, search: value }));
+    if (value.trim() === '') setSearchEpoch((current) => current + 1);
   }, []);
   const setFrom = useCallback((value: string) => {
     setFilters((current) => ({ ...current, from: value }));
@@ -71,6 +77,7 @@ export function useProducts() {
 
   const clearFilters = useCallback(() => {
     setFilters(EMPTY_FILTERS);
+    setSearchEpoch((current) => current + 1);
     setOffset(0);
   }, [setOffset]);
 

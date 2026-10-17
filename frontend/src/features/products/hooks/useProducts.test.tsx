@@ -58,6 +58,11 @@ function lastParams(): unknown {
   return requests.at(-1)?.params;
 }
 
+const tick = (ms: number) =>
+  act(async () => {
+    vi.advanceTimersByTime(ms);
+  });
+
 async function renderLoaded() {
   const rendered = renderHook(() => useProducts());
   await waitFor(() => expect(rendered.result.current.loading).toBe(false));
@@ -119,6 +124,38 @@ describe('useProducts', () => {
     expect(lastParams()).toEqual({ offset: 0, limit: 10, search: 'Producto 1' });
     expect(result.current.pagination.offset).toBe(0);
     expect(result.current.total).toBe(11);
+  });
+
+  it('drops a pending search when the filters are cleared', async () => {
+    const { result } = await renderLoaded();
+    vi.useFakeTimers();
+
+    await act(async () => result.current.setSearch('abc'));
+    await tick(100);
+    await act(async () => result.current.clearFilters());
+    await tick(1000);
+
+    expect(result.current.filters.search).toBe('');
+    expect(requests.map((request) => request.params as unknown)).toEqual([
+      { offset: 0, limit: 10 },
+    ]);
+  });
+
+  it('never re-applies a search that was cleared before a new one settles', async () => {
+    const { result } = await renderLoaded();
+    vi.useFakeTimers();
+    await act(async () => result.current.setSearch('Producto 2'));
+    await tick(300);
+    await act(async () => result.current.clearFilters());
+    await tick(100);
+
+    await act(async () => result.current.setSearch('Producto 1'));
+    await tick(299);
+
+    const searches = requests.map((request) => (request.params as { search?: string }).search);
+    expect(searches).toEqual([undefined, 'Producto 2', undefined]);
+    await tick(1);
+    expect(lastParams()).toEqual({ offset: 0, limit: 10, search: 'Producto 1' });
   });
 
   it('sends the date range and resets to the first page', async () => {
