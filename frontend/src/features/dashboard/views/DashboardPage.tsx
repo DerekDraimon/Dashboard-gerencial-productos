@@ -5,8 +5,10 @@ import Box from '@mui/material/Box';
 import { EmptyState, ErrorState } from '../../../shared/components/states';
 import { StatusChip } from '../../../shared/components/status-chip';
 import { formatMoney } from '../../../shared/format/money';
+import { CategoryDonut } from '../components/CategoryDonut';
 import { KpiCard } from '../components/KpiCard';
 import { RecentProductsTable } from '../components/RecentProductsTable';
+import { TopPricesChart } from '../components/TopPricesChart';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 
 export function DashboardPage() {
@@ -68,7 +70,16 @@ export function DashboardPage() {
         />
       </Box>
 
-      {/* U6: category distribution and top-5 price charts go here, between the KPIs and the table. */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+          gap: 2.5,
+        }}
+      >
+        <CategoryDonut distribution={metrics.categoryDistribution} loading={loading} />
+        <TopPricesChart products={metrics.topExpensive} loading={loading} />
+      </Box>
 
       <RecentProductsTable products={metrics.latestCreated} loading={loading} />
     </Box>

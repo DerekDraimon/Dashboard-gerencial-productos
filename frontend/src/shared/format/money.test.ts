@@ -2,7 +2,7 @@ import Decimal from 'decimal.js';
 import { describe, expect, it } from 'vitest';
 import { formatMoney, sumMoney } from './money';
 
-const NBSP = ' ';
+const NBSP = String.fromCharCode(0xa0);
 
 describe('sumMoney', () => {
   it('adds 0.1 and 0.2 to exactly 0.3', () => {

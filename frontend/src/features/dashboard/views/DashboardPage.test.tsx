@@ -8,7 +8,7 @@ import { httpClient } from '../../../shared/api/http-client';
 import type { Product } from '../../products/api/products-api';
 import { DashboardPage } from './DashboardPage';
 
-const NBSP = ' ';
+const NBSP = String.fromCharCode(0xa0);
 
 function product(
   id: string,
@@ -86,12 +86,30 @@ describe('DashboardPage', () => {
       'aria-busy',
       'true',
     );
+    for (const chart of ['Distribución por categoría', 'Top 5 productos más caros']) {
+      expect(screen.getByRole('region', { name: chart })).toHaveAttribute('aria-busy', 'true');
+    }
     await waitFor(() =>
       expect(screen.getByRole('region', { name: 'Indicadores clave' })).toHaveAttribute(
         'aria-busy',
         'false',
       ),
     );
+  });
+
+  it('renders both charts with the computed data', async () => {
+    renderPage();
+
+    expect(
+      await screen.findByRole('img', {
+        name: 'Distribución por categoría: Hogar 50%, Ropa 33,3%, Deportes 16,7%',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: `Top 5 productos más caros: Sofá US$${NBSP}1.000,00, Lámpara US$${NBSP}234,50, Balón US$${NBSP}15,00, Taza US$${NBSP}5,00, Camisa US$${NBSP}0,20`,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('shows the three KPIs computed from every product', async () => {
