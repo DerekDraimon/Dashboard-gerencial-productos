@@ -69,6 +69,24 @@ describe('TablePaginationFooter', () => {
     expect(next).toBeDisabled();
   });
 
+  it('clamps the range to the last page when the offset is past the total', () => {
+    const { previous, next } = renderFooter({ offset: 50, limit: 10, total: 45 });
+
+    expect(screen.getByText('Mostrando 41–45 de 45')).toBeInTheDocument();
+    expect(previous).toBeEnabled();
+    expect(next).toBeDisabled();
+  });
+
+  it('keeps a limit that is not among the page size options selectable', () => {
+    renderFooter({ offset: 0, limit: 20, total: 45 });
+    const select = screen.getByLabelText('Filas por página');
+
+    expect(select).toHaveValue('20');
+    expect(
+      Array.from(select.querySelectorAll('option')).map((option) => option.textContent),
+    ).toEqual(['10', '20', '25', '50']);
+  });
+
   it('calls onLimitChange when "Filas por página" changes', async () => {
     const { onLimitChange, onOffsetChange } = renderFooter({ offset: 10, limit: 10, total: 45 });
     const select = screen.getByLabelText('Filas por página');

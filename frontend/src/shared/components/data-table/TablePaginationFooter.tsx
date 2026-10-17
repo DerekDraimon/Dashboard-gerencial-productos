@@ -37,8 +37,12 @@ export function TablePaginationFooter({
   pageSizeOptions = PAGE_SIZE_OPTIONS,
 }: TablePaginationFooterProps) {
   const selectId = useId();
-  const from = offset + 1;
-  const to = Math.min(offset + limit, total);
+  const lastPageOffset = Math.max(0, Math.floor((total - 1) / limit) * limit);
+  const from = Math.min(offset, lastPageOffset) + 1;
+  const to = Math.min(from - 1 + limit, total);
+  const options = pageSizeOptions.includes(limit)
+    ? pageSizeOptions
+    : [...pageSizeOptions, limit].sort((a, b) => a - b);
   const isFirstPage = offset <= 0;
   const isLastPage = offset + limit >= total;
 
@@ -70,7 +74,7 @@ export function TablePaginationFooter({
             onChange={(event) => onLimitChange(Number(event.target.value))}
             input={<OutlinedInput size="small" sx={{ fontSize: 13, borderRadius: '8px' }} />}
           >
-            {pageSizeOptions.map((option) => (
+            {options.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
