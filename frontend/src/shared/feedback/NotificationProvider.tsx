@@ -2,7 +2,7 @@ import Alert, { type AlertColor } from '@mui/material/Alert';
 import Snackbar, { type SnackbarCloseReason } from '@mui/material/Snackbar';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { NotificationContext, type Notifier } from './notification-context';
 
 interface Notification {
@@ -11,30 +11,53 @@ interface Notification {
   severity: AlertColor;
 }
 
+interface QueueState {
+  current: Notification | null;
+  open: boolean;
+  pending: Notification[];
+}
+
+type QueueAction =
+  { type: 'enqueue'; notification: Notification } | { type: 'close' } | { type: 'exited' };
+
 const AUTO_HIDE_MS = 4000;
+const INITIAL_STATE: QueueState = { current: null, open: false, pending: [] };
+
+function queueReducer(state: QueueState, action: QueueAction): QueueState {
+  switch (action.type) {
+    case 'enqueue':
+      return state.current
+        ? { ...state, pending: [...state.pending, action.notification] }
+        : { ...state, current: action.notification, open: true };
+    case 'close':
+      return { ...state, open: false };
+    case 'exited': {
+      const [next, ...pending] = state.pending;
+      return { current: next ?? null, open: next !== undefined, pending };
+    }
+  }
+}
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-  const [notification, setNotification] = useState<Notification | null>(null);
-  const [open, setOpen] = useState(false);
+  const [{ current, open }, dispatch] = useReducer(queueReducer, INITIAL_STATE);
+  const nextId = useRef(0);
 
-  const show = useCallback((message: string, severity: AlertColor) => {
-    setNotification({ id: Date.now(), message, severity });
-    setOpen(true);
+  const notifier = useMemo<Notifier>(() => {
+    const enqueue = (message: string, severity: AlertColor) => {
+      nextId.current += 1;
+      dispatch({ type: 'enqueue', notification: { id: nextId.current, message, severity } });
+    };
+    return {
+      success: (message) => enqueue(message, 'success'),
+      error: (message) => enqueue(message, 'error'),
+    };
   }, []);
-
-  const notifier = useMemo<Notifier>(
-    () => ({
-      success: (message) => show(message, 'success'),
-      error: (message) => show(message, 'error'),
-    }),
-    [show],
-  );
 
   const handleClose = (_event?: unknown, reason?: SnackbarCloseReason) => {
     if (reason !== 'clickaway') {
-      setOpen(false);
+      dispatch({ type: 'close' });
     }
   };
 
@@ -42,19 +65,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     <NotificationContext.Provider value={notifier}>
       {children}
       <Snackbar
-        key={notification?.id}
+        key={current?.id}
         open={open}
         autoHideDuration={AUTO_HIDE_MS}
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: isDesktop ? 'right' : 'center' }}
+        slotProps={{ transition: { onExited: () => dispatch({ type: 'exited' }) } }}
       >
         <Alert
-          severity={notification?.severity ?? 'success'}
+          severity={current?.severity ?? 'success'}
           variant="filled"
           onClose={handleClose}
           sx={{ width: '100%' }}
         >
-          {notification?.message}
+          {current?.message}
         </Alert>
       </Snackbar>
     </NotificationContext.Provider>

@@ -1,9 +1,10 @@
-import axios, { isAxiosError } from 'axios';
+import axios, { isAxiosError, isCancel } from 'axios';
 import { ApiError } from './api-error';
 
 const NETWORK_ERROR_MESSAGE =
   'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
 const UNEXPECTED_ERROR_MESSAGE = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+const REQUEST_CANCELED_MESSAGE = 'La solicitud fue cancelada.';
 
 export interface HttpAuthHooks {
   getToken: () => string | null;
@@ -61,6 +62,9 @@ function isBackendErrorBody(data: unknown): data is BackendErrorBody {
 export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {
     return error;
+  }
+  if (isCancel(error)) {
+    return new ApiError(0, 'REQUEST_CANCELED', REQUEST_CANCELED_MESSAGE);
   }
   if (!isAxiosError(error)) {
     return new ApiError(0, 'UNEXPECTED_ERROR', UNEXPECTED_ERROR_MESSAGE);

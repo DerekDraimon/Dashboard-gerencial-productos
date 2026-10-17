@@ -2,7 +2,7 @@ import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
 import { AxiosError } from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from './api-error';
-import { configureHttpAuth, httpClient } from './http-client';
+import { configureHttpAuth, httpClient, toApiError } from './http-client';
 
 function respondWith(status: number, data: unknown): AxiosAdapter {
   return async (config) => {
@@ -66,6 +66,41 @@ describe('httpClient', () => {
       status: 0,
       code: 'NETWORK_ERROR',
       message: 'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+    });
+  });
+
+  it('maps a canceled request to REQUEST_CANCELED instead of a network error', async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const error = await captureError(
+      httpClient.get('/products', { signal: controller.signal, adapter: respondWith(200, {}) }),
+    );
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 0, code: 'REQUEST_CANCELED' });
+  });
+
+  it('maps an error response without the backend shape to HTTP_ERROR', async () => {
+    const error = await captureError(
+      httpClient.get('/products', { adapter: respondWith(502, '<html>Bad Gateway</html>') }),
+    );
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({
+      status: 502,
+      code: 'HTTP_ERROR',
+      message: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
+    });
+  });
+
+  it('maps a non HTTP failure to UNEXPECTED_ERROR', () => {
+    const error = toApiError(new TypeError('boom'));
+
+    expect(error).toMatchObject({
+      status: 0,
+      code: 'UNEXPECTED_ERROR',
+      message: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
     });
   });
 

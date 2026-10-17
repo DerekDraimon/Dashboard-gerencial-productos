@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { NotificationProvider } from './NotificationProvider';
@@ -11,6 +11,14 @@ function Trigger() {
     <>
       <button onClick={() => notify.success('Producto guardado')}>Guardar</button>
       <button onClick={() => notify.error('No se pudo guardar')}>Fallar</button>
+      <button
+        onClick={() => {
+          notify.success('Producto guardado');
+          notify.error('No se pudo guardar');
+        }}
+      >
+        Ambos
+      </button>
     </>
   );
 }
@@ -42,5 +50,20 @@ describe('useNotify', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('No se pudo guardar');
     expect(alert).toHaveClass('MuiAlert-colorError');
+  });
+
+  it('queues notifications raised at the same time and shows them in order', async () => {
+    renderTrigger();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ambos' }));
+
+    const first = await screen.findByRole('alert');
+    expect(first).toHaveTextContent('Producto guardado');
+    expect(first).toHaveClass('MuiAlert-colorSuccess');
+
+    await userEvent.click(within(first).getByRole('button', { name: 'Close' }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No se pudo guardar'));
+    expect(screen.getByRole('alert')).toHaveClass('MuiAlert-colorError');
   });
 });
