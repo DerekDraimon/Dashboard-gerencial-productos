@@ -1,7 +1,8 @@
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { httpClient } from '../shared/api/http-client';
 import { NAVIGATION_ITEMS } from '../shared/layout/navigation';
 import { AppProviders } from './providers';
 import { routes } from './routes';
@@ -50,8 +51,22 @@ function renderAt(path: string) {
   return router;
 }
 
+const admin = { id: 'a1', email: 'ana@example.com', name: 'Ana', role: 'ADMIN', active: true };
+
+beforeEach(() => {
+  localStorage.setItem('dashboard-gerencial.token', 'stored-token');
+  httpClient.defaults.adapter = async (config) => ({
+    status: 200,
+    statusText: '',
+    headers: {},
+    config,
+    data: admin,
+  });
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
+  localStorage.clear();
 });
 
 describe('app routes', () => {
@@ -144,5 +159,14 @@ describe('app routes', () => {
     resize(false);
     await waitFor(() => expect(screen.queryByRole('navigation')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Abrir menú' })).toBeInTheDocument();
+  });
+
+  it('serves the login page outside the app layout', async () => {
+    localStorage.clear();
+    setViewport(true);
+    renderAt('/login');
+
+    expect(await screen.findByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 });
