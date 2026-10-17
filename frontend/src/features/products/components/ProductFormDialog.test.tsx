@@ -22,10 +22,15 @@ const created: Product = {
 
 let posts: InternalAxiosRequestConfig[];
 let postError: { status: number; body: unknown } | null;
+let loadFails: boolean;
 
 const adapter: AxiosAdapter = async (config) => {
   if (config.url === '/products/categories') {
     return { status: 200, statusText: '', headers: {}, config, data: ['Hogar', 'Muebles'] };
+  }
+  if (config.method === 'get') {
+    if (loadFails) throw new AxiosError('Failed', AxiosError.ERR_NETWORK, config);
+    return { status: 200, statusText: '', headers: {}, config, data: created };
   }
   posts.push(config);
   if (postError) {
@@ -63,6 +68,7 @@ async function fillValid() {
 beforeEach(() => {
   posts = [];
   postError = null;
+  loadFails = false;
   httpClient.defaults.adapter = adapter;
 });
 
@@ -97,15 +103,55 @@ describe('ProductFormDialog', () => {
     expect(await screen.findByText(message)).toBeInTheDocument();
   });
 
-  it('rejects a fractional stock', async () => {
+  it.each(['1.5', '9007199254740992'])('rejects the stock %s', async (stock) => {
     renderDialog();
 
-    await userEvent.type(field('Stock'), '1.5');
+    await userEvent.type(field('Stock'), stock);
     await save();
 
     expect(
       await screen.findByText('El stock debe ser un número entero mayor o igual a 0.'),
     ).toBeInTheDocument();
+  });
+
+  it('accepts a comma as the decimal separator', async () => {
+    const { onSaved } = renderDialog();
+
+    await fillValid();
+    await userEvent.clear(field('Precio'));
+    await userEvent.type(field('Precio'), '24,99');
+    await save();
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(JSON.parse(posts[0]?.data as string)).toMatchObject({ price: 24.99 });
+  });
+
+  it('maps every valid detail to its field and toasts the ones without a field', async () => {
+    postError = {
+      status: 400,
+      body: {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Datos inválidos',
+          details: [
+            { path: 'title', message: 'Título repetido.' },
+            { path: 'price', message: 'Precio fuera de rango.' },
+            { path: 'color', message: 'Campo no permitido.' },
+            { path: 5, message: 'Ruta inválida.' },
+            null,
+          ],
+        },
+      },
+    };
+    renderDialog();
+
+    await fillValid();
+    await save();
+
+    expect(await screen.findByText('Título repetido.')).toBeInTheDocument();
+    expect(screen.getByText('Precio fuera de rango.')).toBeInTheDocument();
+    expect(await screen.findByText('Campo no permitido.')).toBeInTheDocument();
+    expect(screen.queryByText('Ruta inválida.')).not.toBeInTheDocument();
   });
 
   it('creates the product with the exact payload, then notifies and closes', async () => {
@@ -204,6 +250,14 @@ describe('ProductFormDialog', () => {
       expect(within(preview()).getAllByText('Al guardar')).toHaveLength(2);
     });
 
+    it('reads a comma price in the preview', async () => {
+      renderDialog();
+
+      await userEvent.type(field('Precio'), '24,99');
+
+      expect(preview()).toHaveTextContent(/US\$\s24,99/);
+    });
+
     it('shows an added url in the list and in the preview', async () => {
       renderDialog();
       await userEvent.type(field('Título'), 'Lámpara');
@@ -256,6 +310,70 @@ describe('ProductFormDialog', () => {
       expect(JSON.parse(posts[0]?.data as string)).toMatchObject({
         images: ['https://example.com/a.png', 'https://example.com/b.png'],
       });
+    });
+  });
+
+  describe('edit mode', () => {
+    function renderEdit() {
+      const onClose = vi.fn();
+      const onSaved = vi.fn();
+      render(
+        <NotificationProvider>
+          <ProductFormDialog open mode="edit" productId="p9" onClose={onClose} onSaved={onSaved} />
+        </NotificationProvider>,
+      );
+      return { onClose, onSaved };
+    }
+    const saveChanges = () =>
+      userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    it('loads the product and prefills the form', async () => {
+      renderEdit();
+
+      expect(screen.getByRole('dialog', { name: 'Editar producto' })).toBeInTheDocument();
+      expect(await screen.findByDisplayValue('Silla')).toBe(field('Título'));
+      expect(field('Precio')).toHaveValue('24.50');
+      expect(field('Stock')).toHaveValue('3');
+      expect(field('Categoría')).toHaveValue('Muebles');
+      expect(field('Descripción')).toHaveValue('Silla de madera');
+    });
+
+    it('sends only the changed fields', async () => {
+      const { onClose, onSaved } = renderEdit();
+      await screen.findByDisplayValue('Silla');
+
+      await userEvent.clear(field('Precio'));
+      await userEvent.type(field('Precio'), '30');
+      await saveChanges();
+
+      await waitFor(() => expect(onSaved).toHaveBeenCalledWith(created));
+      expect(posts[0]?.method).toBe('patch');
+      expect(posts[0]?.url).toBe('/products/p9');
+      expect(JSON.parse(posts[0]?.data as string)).toEqual({ price: 30 });
+      expect(await screen.findByText('Producto actualizado')).toBeInTheDocument();
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    it('closes without a request when nothing changed', async () => {
+      const { onClose, onSaved } = renderEdit();
+      await screen.findByDisplayValue('Silla');
+
+      await saveChanges();
+
+      await waitFor(() => expect(onClose).toHaveBeenCalled());
+      expect(posts).toHaveLength(0);
+      expect(onSaved).not.toHaveBeenCalled();
+    });
+
+    it('shows the load error and retries', async () => {
+      loadFails = true;
+      renderEdit();
+
+      const retry = await screen.findByRole('button', { name: 'Reintentar' });
+      loadFails = false;
+      await userEvent.click(retry);
+
+      expect(await screen.findByDisplayValue('Silla')).toBe(field('Título'));
     });
   });
 });

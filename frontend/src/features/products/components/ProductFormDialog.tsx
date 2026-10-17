@@ -2,12 +2,19 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm, type FieldPath } from 'react-hook-form';
 import { ApiError } from '../../../shared/api/api-error';
 import { FormDialog } from '../../../shared/components/form-dialog';
+import { ErrorState, LoadingState } from '../../../shared/components/states';
 import { useNotify } from '../../../shared/feedback/use-notify';
-import { createProduct, type Product, type ProductInput } from '../api/products-api';
+import {
+  createProduct,
+  getProduct,
+  updateProduct,
+  type Product,
+  type ProductInput,
+} from '../api/products-api';
 import { useCategories } from '../hooks/useCategories';
 import { ImageUrlsField } from './ImageUrlsField';
 import { ProductFormPreview } from './ProductFormPreview';
@@ -21,11 +28,21 @@ export interface ProductFormValues {
   images: string[];
 }
 
-export interface ProductFormDialogProps {
+export type ProductFormDialogProps = {
   open: boolean;
-  mode: 'create';
   onClose: () => void;
   onSaved: (product: Product) => void;
+} & ({ mode: 'create' } | { mode: 'edit'; productId: string });
+
+interface LoadedProduct {
+  key: string;
+  values: ProductFormValues | null;
+  error: unknown;
+}
+
+interface ValidationDetail {
+  path: string;
+  message: string;
 }
 
 const EMPTY_VALUES: ProductFormValues = {
@@ -63,7 +80,9 @@ function validatePrice(value: string) {
 }
 
 function validateStock(value: string) {
-  return /^\d+$/.test(value.trim()) || 'El stock debe ser un número entero mayor o igual a 0.';
+  const stock = value.trim();
+  const valid = /^\d+$/.test(stock) && Number(stock) <= Number.MAX_SAFE_INTEGER;
+  return valid || 'El stock debe ser un número entero mayor o igual a 0.';
 }
 
 function toProductInput(values: ProductFormValues): ProductInput {
@@ -77,12 +96,37 @@ function toProductInput(values: ProductFormValues): ProductInput {
   };
 }
 
-function validationDetails(error: unknown): { path: string; message: string }[] {
-  if (!(error instanceof ApiError) || error.code !== 'VALIDATION_ERROR') return [];
-  return Array.isArray(error.details) ? (error.details as { path: string; message: string }[]) : [];
+function toFormValues(product: Product): ProductFormValues {
+  return {
+    title: product.title,
+    price: product.price.toFixed(2),
+    stock: String(product.stock),
+    category: product.category,
+    description: product.description,
+    images: product.images,
+  };
 }
 
-export function ProductFormDialog({ open, onClose, onSaved }: ProductFormDialogProps) {
+function changedFields(next: ProductInput, original: ProductInput): Partial<ProductInput> {
+  const keys = Object.keys(next) as (keyof ProductInput)[];
+  const changed = keys.filter((key) => JSON.stringify(next[key]) !== JSON.stringify(original[key]));
+  return Object.fromEntries(changed.map((key) => [key, next[key]]));
+}
+
+function isValidationDetail(detail: unknown): detail is ValidationDetail {
+  if (typeof detail !== 'object' || detail === null) return false;
+  const { path, message } = detail as Record<string, unknown>;
+  return typeof path === 'string' && typeof message === 'string';
+}
+
+function validationDetails(error: unknown): ValidationDetail[] {
+  if (!(error instanceof ApiError) || error.code !== 'VALIDATION_ERROR') return [];
+  return Array.isArray(error.details) ? error.details.filter(isValidationDetail) : [];
+}
+
+export function ProductFormDialog(props: ProductFormDialogProps) {
+  const { open, onClose, onSaved } = props;
+  const productId = props.mode === 'edit' ? props.productId : null;
   const notify = useNotify();
   const { categories } = useCategories();
   const {
@@ -94,25 +138,66 @@ export function ProductFormDialog({ open, onClose, onSaved }: ProductFormDialogP
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({ defaultValues: EMPTY_VALUES });
 
+  const [attempt, setAttempt] = useState(0);
+  const [loaded, setLoaded] = useState<LoadedProduct>({ key: '', values: null, error: null });
+  const loadKey = productId === null ? '' : `${productId}:${attempt}`;
+  const current = open && loaded.key === loadKey;
+  const loadError = current ? loaded.error : null;
+  const ready = productId === null || (current && loaded.values !== null);
+
   useEffect(() => {
-    if (open) reset(EMPTY_VALUES);
-  }, [open, reset]);
+    if (!open) return;
+    if (productId === null) {
+      reset(EMPTY_VALUES);
+      return;
+    }
+    const controller = new AbortController();
+    getProduct(productId, { signal: controller.signal }).then(
+      (product) => {
+        if (controller.signal.aborted) return;
+        const values = toFormValues(product);
+        reset(values);
+        setLoaded({ key: loadKey, values, error: null });
+      },
+      (error: unknown) => {
+        if (!controller.signal.aborted) setLoaded({ key: loadKey, values: null, error });
+      },
+    );
+    return () => controller.abort();
+  }, [open, productId, loadKey, reset]);
+
+  async function save(values: ProductFormValues): Promise<void> {
+    const input = toProductInput(values);
+    if (productId === null) {
+      onSaved(await createProduct(input));
+      notify.success('Producto creado');
+    } else {
+      const patch = changedFields(input, toProductInput(loaded.values ?? EMPTY_VALUES));
+      // Nothing changed: closing silently is the expected outcome, not an error.
+      if (Object.keys(patch).length > 0) {
+        onSaved(await updateProduct(productId, patch));
+        notify.success('Producto actualizado');
+      }
+    }
+    onClose();
+  }
 
   const submit = handleSubmit(async (values) => {
     try {
-      const product = await createProduct(toProductInput(values));
-      notify.success('Producto creado');
-      onSaved(product);
-      onClose();
+      await save(values);
     } catch (error) {
-      const fieldErrors = validationDetails(error).flatMap(({ path, message }) => {
+      const details = validationDetails(error);
+      const unmatched: string[] = [];
+      for (const { path, message } of details) {
         const name = FIELDS.find((field) => field === path.split('.')[0]);
-        return name ? [{ name, message }] : [];
-      });
-      if (fieldErrors.length === 0) {
-        notify.error(error instanceof ApiError ? error.message : UNEXPECTED_ERROR);
+        if (name) setError(name, { message });
+        else unmatched.push(message);
       }
-      fieldErrors.forEach(({ name, message }) => setError(name, { message }));
+      if (details.length === 0) {
+        notify.error(error instanceof ApiError ? error.message : UNEXPECTED_ERROR);
+      } else if (unmatched.length > 0) {
+        notify.error(unmatched.join(' '));
+      }
     }
   });
 
@@ -133,15 +218,28 @@ export function ProductFormDialog({ open, onClose, onSaved }: ProductFormDialogP
   return (
     <FormDialog
       open={open}
-      title="Nuevo producto"
+      title={productId === null ? 'Nuevo producto' : 'Editar producto'}
       subtitle="Completa los datos del producto."
-      submitLabel="Guardar producto"
+      submitLabel={productId === null ? 'Guardar producto' : 'Guardar cambios'}
       submitting={isSubmitting}
       onClose={onClose}
-      onSubmit={(event) => void submit(event)}
+      onSubmit={(event) => {
+        if (ready) void submit(event);
+      }}
       maxWidth="md"
     >
+      {!ready &&
+        (loadError ? (
+          <ErrorState
+            title="No pudimos cargar el producto"
+            error={loadError}
+            onRetry={() => setAttempt((value) => value + 1)}
+          />
+        ) : (
+          <LoadingState label="Cargando producto…" />
+        ))}
       <Box
+        hidden={!ready}
         sx={{
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 300px' },

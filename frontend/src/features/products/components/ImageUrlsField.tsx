@@ -88,7 +88,10 @@ export function ImageUrlsField({ value, onChange, error }: ImageUrlsFieldProps) 
           placeholder="https://…"
           value={draft}
           error={Boolean(message)}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            setDraftError(null);
+          }}
           onKeyDown={handleKeyDown}
           inputProps={{ 'aria-describedby': message ? `${id}-error` : undefined }}
           sx={{ flex: 1, minWidth: 0 }}

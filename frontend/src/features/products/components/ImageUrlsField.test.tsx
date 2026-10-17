@@ -40,6 +40,15 @@ describe('ImageUrlsField', () => {
     expect(rows()).toHaveLength(0);
   });
 
+  it('clears the error as soon as the url is edited', async () => {
+    render(<Harness />);
+    await add('nota-url');
+
+    await userEvent.type(urlInput(), 'x');
+
+    expect(screen.queryByText('Ingresa una URL válida (http o https).')).not.toBeInTheDocument();
+  });
+
   it('rejects a duplicate url', async () => {
     render(<Harness initial={['https://example.com/a.png']} />);
 

@@ -5,6 +5,7 @@ import { AxiosError } from 'axios';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { httpClient } from '../../../shared/api/http-client';
 import type { UserRole } from '../../../shared/auth/user-role';
+import { ConfirmProvider } from '../../../shared/components/confirm-dialog';
 import { NotificationProvider } from '../../../shared/feedback/NotificationProvider';
 import { AuthContext, type AuthContextValue } from '../../auth/context/auth-context';
 import type { Product } from '../api/products-api';
@@ -23,13 +24,45 @@ function makeProducts(count: number): Product[] {
 
 let catalog: Product[];
 let failing: boolean;
+let deleteFails: boolean;
+let hangLists: boolean;
 let requests: InternalAxiosRequestConfig[];
 
+const ok = (config: InternalAxiosRequestConfig, data: unknown) => ({
+  status: 200,
+  statusText: '',
+  headers: {},
+  config,
+  data,
+});
+
 const adapter: AxiosAdapter = async (config) => {
-  if (config.url === '/products/categories') {
-    return { status: 200, statusText: '', headers: {}, config, data: [] };
-  }
+  if (config.url === '/products/categories') return ok(config, []);
   requests.push(config);
+  const id = config.url?.split('/')[2];
+  if (config.method === 'delete') {
+    if (deleteFails) {
+      const data = { error: { code: 'PRODUCT_NOT_FOUND', message: 'El producto no existe.' } };
+      const response = { status: 404, statusText: '', headers: {}, config, data };
+      throw new AxiosError('Failed', AxiosError.ERR_BAD_REQUEST, config, null, response);
+    }
+    catalog = catalog.filter((product) => product.id !== id);
+    return ok(config, '');
+  }
+  if (config.method === 'patch') {
+    const patch = JSON.parse(config.data as string) as Partial<Product>;
+    catalog = catalog.map((product) => (product.id === id ? { ...product, ...patch } : product));
+    return ok(
+      config,
+      catalog.find((product) => product.id === id),
+    );
+  }
+  if (config.method === 'get' && id)
+    return ok(
+      config,
+      catalog.find((product) => product.id === id),
+    );
+  if (hangLists) return new Promise(() => undefined);
   if (config.method === 'post') {
     const [base] = makeProducts(1) as [Product];
     const created: Product = {
@@ -59,9 +92,11 @@ function renderPage(role: UserRole) {
   };
   render(
     <NotificationProvider>
-      <AuthContext.Provider value={auth}>
-        <InventoryPage />
-      </AuthContext.Provider>
+      <ConfirmProvider>
+        <AuthContext.Provider value={auth}>
+          <InventoryPage />
+        </AuthContext.Provider>
+      </ConfirmProvider>
     </NotificationProvider>,
   );
 }
@@ -71,6 +106,8 @@ const loaded = () => screen.findByText('Producto 0');
 beforeEach(() => {
   catalog = makeProducts(12);
   failing = false;
+  deleteFails = false;
+  hangLists = false;
   requests = [];
   httpClient.defaults.adapter = adapter;
 });
@@ -170,5 +207,92 @@ describe('InventoryPage', () => {
 
     await waitFor(() => expect(screen.getByText('Producto 0')).toBeInTheDocument());
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  describe('edit and delete', () => {
+    const lists = () => requests.filter((request) => request.url === '/products');
+    const confirmDialog = () =>
+      screen.findByRole('alertdialog', { name: '¿Eliminar este producto?' });
+
+    it('edits a row with prefilled data and reloads the list', async () => {
+      renderPage('ADMIN');
+      await loaded();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Editar Producto 2' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Editar producto' });
+      const title = await within(dialog).findByDisplayValue('Producto 2');
+      await userEvent.clear(title);
+      await userEvent.type(title, 'Producto editado');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+
+      expect(await screen.findByText('Producto editado')).toBeInTheDocument();
+      expect(requests.find((request) => request.method === 'patch')?.data).toBe(
+        JSON.stringify({ title: 'Producto editado' }),
+      );
+      expect(lists()).toHaveLength(2);
+    });
+
+    it('removes the row at once after confirming, then reloads', async () => {
+      renderPage('ADMIN');
+      await loaded();
+      hangLists = true;
+
+      await userEvent.click(screen.getByRole('button', { name: 'Eliminar Producto 1' }));
+      const dialog = await confirmDialog();
+      expect(dialog).toHaveTextContent('Producto 1');
+      expect(dialog).toHaveTextContent('Esta acción no se puede deshacer.');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
+
+      expect(await screen.findByText('Producto eliminado')).toBeInTheDocument();
+      expect(screen.queryByText('Producto 1')).not.toBeInTheDocument();
+      expect(screen.getByText('Producto 0')).toBeInTheDocument();
+      expect(requests.some((request) => request.method === 'delete')).toBe(true);
+      expect(lists()).toHaveLength(2);
+    });
+
+    it('does nothing when the delete is canceled', async () => {
+      renderPage('ADMIN');
+      await loaded();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Eliminar Producto 1' }));
+      await userEvent.click(
+        within(await confirmDialog()).getByRole('button', { name: 'Cancelar' }),
+      );
+
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+      expect(requests.some((request) => request.method === 'delete')).toBe(false);
+      expect(screen.getByText('Producto 1')).toBeInTheDocument();
+    });
+
+    it('keeps the row and shows the error when the delete fails', async () => {
+      deleteFails = true;
+      renderPage('ADMIN');
+      await loaded();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Eliminar Producto 1' }));
+      await userEvent.click(
+        within(await confirmDialog()).getByRole('button', { name: 'Eliminar' }),
+      );
+
+      expect(await screen.findByText('El producto no existe.')).toBeInTheDocument();
+      expect(screen.getByText('Producto 1')).toBeInTheDocument();
+      expect(lists()).toHaveLength(1);
+    });
+
+    it('goes back a page after deleting the only row of the last page', async () => {
+      catalog = makeProducts(11);
+      renderPage('ADMIN');
+      await loaded();
+      await userEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+      await screen.findByText('Producto 10');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Eliminar Producto 10' }));
+      await userEvent.click(
+        within(await confirmDialog()).getByRole('button', { name: 'Eliminar' }),
+      );
+
+      expect(await screen.findByText('Producto 0')).toBeInTheDocument();
+      expect(lists().at(-1)?.params).toEqual({ offset: 0, limit: 10 });
+    });
   });
 });

@@ -15,12 +15,10 @@ import { ProductDetailDrawer } from '../components/ProductDetailDrawer';
 import { ProductFilters } from '../components/ProductFilters';
 import { ProductFormDialog } from '../components/ProductFormDialog';
 import { ProductsTable } from '../components/ProductsTable';
+import { useDeleteProduct } from '../hooks/useDeleteProduct';
 import { useProducts } from '../hooks/useProducts';
 
 const actionSx = { width: 44, height: 44, borderRadius: '10px' } as const;
-
-// U6 wires these handlers to the edit dialog and the delete flow.
-const noop = () => undefined;
 
 export function InventoryPage() {
   const { user } = useAuth();
@@ -32,6 +30,9 @@ export function InventoryPage() {
   const hasFilters = Object.values(filters).some((value) => value !== '');
   const [detail, setDetail] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
+  // The id outlives `open` so the dialog keeps its content during the closing transition.
+  const [editing, setEditing] = useState({ id: '', open: false });
+  const removeProduct = useDeleteProduct(products);
 
   function renderActions(product: Product) {
     if (!isAdmin) {
@@ -47,12 +48,16 @@ export function InventoryPage() {
     }
     return (
       <>
-        <IconButton aria-label={`Editar ${product.title}`} onClick={noop} sx={actionSx}>
+        <IconButton
+          aria-label={`Editar ${product.title}`}
+          onClick={() => setEditing({ id: product.id, open: true })}
+          sx={actionSx}
+        >
           <EditOutlined fontSize="small" />
         </IconButton>
         <IconButton
           aria-label={`Eliminar ${product.title}`}
-          onClick={noop}
+          onClick={() => void removeProduct(product)}
           sx={{ ...actionSx, color: 'error.main' }}
         >
           <DeleteOutlined fontSize="small" />
@@ -115,12 +120,21 @@ export function InventoryPage() {
       )}
       <ProductDetailDrawer product={detail} onClose={() => setDetail(null)} />
       {isAdmin && (
-        <ProductFormDialog
-          open={creating}
-          mode="create"
-          onClose={() => setCreating(false)}
-          onSaved={products.reload}
-        />
+        <>
+          <ProductFormDialog
+            open={creating}
+            mode="create"
+            onClose={() => setCreating(false)}
+            onSaved={products.reload}
+          />
+          <ProductFormDialog
+            open={editing.open}
+            mode="edit"
+            productId={editing.id}
+            onClose={() => setEditing((current) => ({ ...current, open: false }))}
+            onSaved={products.refresh}
+          />
+        </>
       )}
     </Box>
   );

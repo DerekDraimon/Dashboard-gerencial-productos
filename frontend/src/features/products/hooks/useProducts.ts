@@ -24,6 +24,8 @@ export function useProducts() {
   const pagination = usePagination();
   const [filters, setFilters] = useState<ProductFilters>(EMPTY_FILTERS);
   const [attempt, setAttempt] = useState(0);
+  // Not part of requestKey: a refresh refetches in the background without showing skeletons.
+  const [refreshes, setRefreshes] = useState(0);
   const [page, setPage] = useState<PageState>({ key: '', rows: [], total: 0, error: null });
 
   // Each clear starts a new epoch, so a debounced value typed before it can never apply afterwards.
@@ -62,7 +64,7 @@ export function useProducts() {
       },
     );
     return () => controller.abort();
-  }, [requestKey, dateRangeError, offset, limit, search, from, to]);
+  }, [requestKey, refreshes, dateRangeError, offset, limit, search, from, to]);
 
   const setSearch = useCallback((value: string) => {
     setFilters((current) => ({ ...current, search: value }));
@@ -82,6 +84,7 @@ export function useProducts() {
   }, [setOffset]);
 
   const reload = useCallback(() => setAttempt((current) => current + 1), []);
+  const refresh = useCallback(() => setRefreshes((current) => current + 1), []);
 
   const removeLocally = useCallback((id: string) => {
     setPage((current) => {
@@ -97,6 +100,7 @@ export function useProducts() {
     loading: !dateRangeError && page.key !== requestKey,
     error: page.key === requestKey ? page.error : null,
     reload,
+    refresh,
     pagination,
     filters,
     setSearch,
