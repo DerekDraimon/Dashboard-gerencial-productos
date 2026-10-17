@@ -88,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               title="No pudimos verificar tu sesión"
               error={session.error}
               onRetry={() => setSession({ status: 'checking', user: null })}
+              secondaryAction={{ label: 'Ir al inicio de sesión', onClick: clearSession }}
             />
           )}
         </Box>

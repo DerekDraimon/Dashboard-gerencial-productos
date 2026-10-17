@@ -1,11 +1,18 @@
 import ErrorOutlineOutlined from '@mui/icons-material/ErrorOutlineOutlined';
 import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 import { ApiError } from '../../api/api-error';
 import { StateLayout } from './StateLayout';
+
+export interface ErrorStateAction {
+  label: string;
+  onClick: () => void;
+}
 
 export interface ErrorStateProps {
   error: unknown;
   onRetry?: () => void;
+  secondaryAction?: ErrorStateAction;
   title?: string;
 }
 
@@ -20,7 +27,12 @@ function errorMessage(error: unknown): string | null {
   return error.message || DEFAULT_MESSAGE;
 }
 
-export function ErrorState({ error, onRetry, title = 'Algo salió mal' }: ErrorStateProps) {
+export function ErrorState({
+  error,
+  onRetry,
+  secondaryAction,
+  title = 'Algo salió mal',
+}: ErrorStateProps) {
   const message = errorMessage(error);
   if (message === null) return null;
 
@@ -32,14 +44,23 @@ export function ErrorState({ error, onRetry, title = 'Algo salió mal' }: ErrorS
       title={title}
       description={message}
       action={
-        onRetry && (
-          <Button
-            variant="outlined"
-            onClick={onRetry}
-            sx={{ px: 2, color: 'text.primary', borderColor: 'text.primary' }}
-          >
-            Reintentar
-          </Button>
+        (onRetry || secondaryAction) && (
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: 'center' }}>
+            {onRetry && (
+              <Button
+                variant="outlined"
+                onClick={onRetry}
+                sx={{ px: 2, color: 'text.primary', borderColor: 'text.primary' }}
+              >
+                Reintentar
+              </Button>
+            )}
+            {secondaryAction && (
+              <Button onClick={secondaryAction.onClick} sx={{ px: 2, color: 'text.secondary' }}>
+                {secondaryAction.label}
+              </Button>
+            )}
+          </Stack>
         )
       }
     />
