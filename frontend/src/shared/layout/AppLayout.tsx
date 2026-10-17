@@ -11,6 +11,12 @@ export function AppLayout() {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'), { noSsr: true });
   const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [wasDesktop, setWasDesktop] = useState(isDesktop);
+  // Adjusting state during render (not in an effect) closes the drawer in the same pass.
+  if (wasDesktop !== isDesktop) {
+    setWasDesktop(isDesktop);
+    if (isDesktop) setDrawerOpen(false);
+  }
   const current = findNavigationItem(useLocation().pathname);
 
   return (

@@ -21,13 +21,14 @@ type QueueAction =
   { type: 'enqueue'; notification: Notification } | { type: 'close' } | { type: 'exited' };
 
 const AUTO_HIDE_MS = 4000;
+const MAX_PENDING = 5;
 const INITIAL_STATE: QueueState = { current: null, open: false, pending: [] };
 
 function queueReducer(state: QueueState, action: QueueAction): QueueState {
   switch (action.type) {
     case 'enqueue':
       return state.current
-        ? { ...state, pending: [...state.pending, action.notification] }
+        ? { ...state, pending: [...state.pending, action.notification].slice(-MAX_PENDING) }
         : { ...state, current: action.notification, open: true };
     case 'close':
       return { ...state, open: false };

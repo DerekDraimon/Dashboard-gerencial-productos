@@ -3,7 +3,10 @@ import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined';
 import type { SvgIconComponent } from '@mui/icons-material';
 
+export type NavigationId = 'dashboard' | 'inventory' | 'users';
+
 export interface NavigationItem {
+  id: NavigationId;
   path: string;
   label: string;
   title: string;
@@ -11,15 +14,19 @@ export interface NavigationItem {
   Icon: SvgIconComponent;
 }
 
+export const HOME_PATH = '/dashboard';
+
 export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   {
-    path: '/dashboard',
+    id: 'dashboard',
+    path: HOME_PATH,
     label: 'Dashboard',
     title: 'Dashboard',
     subtitle: 'Resumen del inventario',
     Icon: SpaceDashboardOutlined,
   },
   {
+    id: 'inventory',
     path: '/inventory',
     label: 'Inventario',
     title: 'Inventario',
@@ -27,6 +34,7 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     Icon: Inventory2Outlined,
   },
   {
+    id: 'users',
     path: '/users',
     label: 'Usuarios',
     title: 'Usuarios',
