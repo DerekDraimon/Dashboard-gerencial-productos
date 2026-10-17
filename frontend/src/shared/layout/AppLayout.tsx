@@ -1,13 +1,19 @@
 import Box from '@mui/material/Box';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import type { UserRole } from '../auth/user-role';
 import { findNavigationItem } from './navigation';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
-export function AppLayout() {
+export interface AppLayoutProps {
+  role?: UserRole;
+  topbarActions?: ReactNode;
+}
+
+export function AppLayout({ role, topbarActions }: AppLayoutProps) {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'), { noSsr: true });
   const [isDrawerOpen, setDrawerOpen] = useState(false);
@@ -25,12 +31,14 @@ export function AppLayout() {
         variant={isDesktop ? 'permanent' : 'temporary'}
         open={isDesktop || isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
+        role={role}
       />
       <Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <Topbar
           title={current?.title ?? ''}
           subtitle={current?.subtitle ?? ''}
           onMenuClick={isDesktop ? undefined : () => setDrawerOpen(true)}
+          actions={topbarActions}
         />
         <Box component="main" sx={{ p: { xs: 2, md: 4 }, width: '100%', maxWidth: 1240 }}>
           <Outlet />

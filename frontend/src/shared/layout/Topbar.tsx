@@ -2,14 +2,16 @@ import MenuRounded from '@mui/icons-material/MenuRounded';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import type { ReactNode } from 'react';
 
 interface TopbarProps {
   title: string;
   subtitle: string;
   onMenuClick?: () => void;
+  actions?: ReactNode;
 }
 
-export function Topbar({ title, subtitle, onMenuClick }: TopbarProps) {
+export function Topbar({ title, subtitle, onMenuClick, actions }: TopbarProps) {
   return (
     <Box
       component="header"
@@ -37,6 +39,7 @@ export function Topbar({ title, subtitle, onMenuClick }: TopbarProps) {
           {subtitle}
         </Typography>
       </Box>
+      {actions}
     </Box>
   );
 }

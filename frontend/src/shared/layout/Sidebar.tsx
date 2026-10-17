@@ -3,7 +3,8 @@ import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import Typography from '@mui/material/Typography';
 import { NavLink } from 'react-router-dom';
-import { NAVIGATION_ITEMS } from './navigation';
+import type { UserRole } from '../auth/user-role';
+import { canOpen, NAVIGATION_ITEMS } from './navigation';
 
 export const SIDEBAR_WIDTH = 248;
 
@@ -15,9 +16,10 @@ interface SidebarProps {
   variant: 'permanent' | 'temporary';
   open: boolean;
   onClose: () => void;
+  role?: UserRole;
 }
 
-export function Sidebar({ variant, open, onClose }: SidebarProps) {
+export function Sidebar({ variant, open, onClose, role }: SidebarProps) {
   const closeIfTemporary = variant === 'temporary' ? onClose : undefined;
 
   return (
@@ -64,7 +66,7 @@ export function Sidebar({ variant, open, onClose }: SidebarProps) {
           </Box>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          {NAVIGATION_ITEMS.map(({ path, label, Icon }) => (
+          {NAVIGATION_ITEMS.filter((item) => canOpen(item, role)).map(({ path, label, Icon }) => (
             <Box
               key={path}
               component={NavLink}

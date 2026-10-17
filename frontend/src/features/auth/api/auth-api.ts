@@ -1,6 +1,7 @@
 import { httpClient } from '../../../shared/api/http-client';
+import type { UserRole } from '../../../shared/auth/user-role';
 
-export type UserRole = 'ADMIN' | 'USER';
+export type { UserRole };
 
 export interface AuthUser {
   id: string;

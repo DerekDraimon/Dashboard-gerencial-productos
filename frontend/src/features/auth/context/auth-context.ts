@@ -1,7 +1,7 @@
 import { createContext } from 'react';
 import type { AuthUser } from '../api/auth-api';
 
-export type AuthStatus = 'checking' | 'authenticated' | 'anonymous';
+export type AuthStatus = 'checking' | 'authenticated' | 'anonymous' | 'unavailable';
 
 export interface AuthContextValue {
   status: AuthStatus;

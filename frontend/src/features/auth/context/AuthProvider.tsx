@@ -1,7 +1,8 @@
 import Box from '@mui/material/Box';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { configureHttpAuth } from '../../../shared/api/http-client';
-import { LoadingState } from '../../../shared/components/states';
+import { ApiError } from '../../../shared/api/api-error';
+import { ErrorState, LoadingState } from '../../../shared/components/states';
 import { useNotify } from '../../../shared/feedback/use-notify';
 import * as authApi from '../api/auth-api';
 import type { AuthUser } from '../api/auth-api';
@@ -13,6 +14,7 @@ const SESSION_EXPIRED_MESSAGE = 'Tu sesión expiró. Inicia sesión de nuevo.';
 interface SessionState {
   status: AuthStatus;
   user: AuthUser | null;
+  error?: unknown;
 }
 
 const ANONYMOUS: SessionState = { status: 'anonymous', user: null };
@@ -50,7 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     authApi.getCurrentUser().then(
       (user) => active && setSession({ status: 'authenticated', user }),
-      () => active && setSession(ANONYMOUS),
+      (error: unknown) => {
+        if (!active) return;
+        // A 401 already ended the session in onUnauthorized; any other failure keeps the token.
+        const unauthorized = error instanceof ApiError && error.status === 401;
+        setSession(unauthorized ? ANONYMOUS : { status: 'unavailable', user: null, error });
+      },
     );
     return () => {
       active = false;
@@ -66,15 +73,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ...session, login, logout: clearSession }),
+    () => ({ status: session.status, user: session.user, login, logout: clearSession }),
     [session, login, clearSession],
   );
 
   return (
     <AuthContext.Provider value={value}>
-      {isChecking ? (
+      {isChecking || session.status === 'unavailable' ? (
         <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
-          <LoadingState />
+          {isChecking ? (
+            <LoadingState />
+          ) : (
+            <ErrorState
+              title="No pudimos verificar tu sesión"
+              error={session.error}
+              onRetry={() => setSession({ status: 'checking', user: null })}
+            />
+          )}
         </Box>
       ) : (
         children
