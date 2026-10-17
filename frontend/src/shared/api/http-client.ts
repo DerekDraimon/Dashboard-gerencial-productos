@@ -6,6 +6,13 @@ const NETWORK_ERROR_MESSAGE =
 const UNEXPECTED_ERROR_MESSAGE = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 const REQUEST_CANCELED_MESSAGE = 'La solicitud fue cancelada.';
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /** A 401 here is an expected answer (wrong credentials), not an expired session. */
+    skipUnauthorizedHandler?: boolean;
+  }
+}
+
 export interface HttpAuthHooks {
   getToken: () => string | null;
   onUnauthorized: (error: ApiError) => void;
@@ -34,7 +41,8 @@ httpClient.interceptors.request.use((config) => {
 
 httpClient.interceptors.response.use(undefined, (error: unknown) => {
   const apiError = toApiError(error);
-  if (apiError.status === 401) {
+  const skipped = isAxiosError(error) && error.config?.skipUnauthorizedHandler === true;
+  if (apiError.status === 401 && !skipped) {
     authHooks.onUnauthorized(apiError);
   }
   return Promise.reject(apiError);

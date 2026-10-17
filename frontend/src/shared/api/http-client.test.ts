@@ -122,4 +122,21 @@ describe('httpClient', () => {
     expect(sentHeaders?.Authorization).toBe('Bearer token-123');
     expect(onUnauthorized).toHaveBeenCalledWith(error);
   });
+
+  it('does not report a 401 from a request that opts out of the unauthorized handler', async () => {
+    const onUnauthorized = vi.fn();
+    configureHttpAuth({ onUnauthorized });
+    const body = { error: { code: 'INVALID_CREDENTIALS', message: 'Credenciales inválidas' } };
+
+    const error = await captureError(
+      httpClient.post(
+        '/auth/login',
+        {},
+        { skipUnauthorizedHandler: true, adapter: respondWith(401, body) },
+      ),
+    );
+
+    expect(error).toMatchObject({ status: 401, code: 'INVALID_CREDENTIALS' });
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
 });
