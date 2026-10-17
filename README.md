@@ -115,7 +115,15 @@ npm run seed
 
 Las contraseñas se leen de `SEED_ADMIN_PASSWORD` y `SEED_USER_PASSWORD` (mínimo 8 caracteres); si falta alguna, el seed termina indicando cuál. Es idempotente: si un email ya existe, lo omite sin modificarlo, así que ejecutarlo varias veces mantiene los mismos 2 usuarios. Para cambiar la contraseña de una cuenta ya creada, elimina ese usuario de la base de datos y vuelve a ejecutar el seed.
 
-Después de los usuarios, el seed inserta 20 productos de ejemplo en 5 categorías (`Electronics`, `Books`, `Sports`, `Home`, `Toys`), con precios y stock variados y fechas de creación (`creationAt`) repartidas en los últimos 60 días. Solo los inserta si la colección de productos está vacía: si ya existe algún producto, no crea ni modifica ninguno.
+Después de los usuarios, el seed inserta 20 productos de ejemplo en 5 categorías (`Electrónica`, `Libros`, `Deportes`, `Hogar`, `Juguetes`), con precios y stock variados y fechas de creación (`creationAt`) repartidas en los últimos 60 días. Solo los inserta si la colección de productos está vacía: si ya existe algún producto, no crea ni modifica ninguno.
+
+Por eso, para recargar los datos de ejemplo en local, borra el volumen de MongoDB y vuelve a sembrar:
+
+```bash
+docker compose down -v   # elimina el volumen local de Mongo (se pierden todos sus datos)
+npm run db:up
+npm run seed
+```
 
 ## API
 

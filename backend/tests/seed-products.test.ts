@@ -34,7 +34,13 @@ describe('seedProducts', () => {
 
     const products = await ProductModel.find().lean();
     expect(products).toHaveLength(SAMPLE_PRODUCTS.length);
-    expect(new Set(products.map((p) => p.category)).size).toBe(5);
+    expect([...new Set(products.map((p) => p.category))].sort()).toEqual([
+      'Deportes',
+      'Electrónica',
+      'Hogar',
+      'Juguetes',
+      'Libros',
+    ]);
     expect(new Set(products.map((p) => p.price)).size).toBeGreaterThan(10);
     expect(new Set(products.map((p) => p.stock)).size).toBeGreaterThan(10);
 
