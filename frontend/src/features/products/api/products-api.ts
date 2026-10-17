@@ -42,3 +42,36 @@ export async function listProducts(
   const response = await httpClient.get<ProductPage>('/products', { params, signal });
   return response.data;
 }
+
+export interface ProductInput {
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  images: string[];
+  stock: number;
+}
+
+export async function getProduct(id: string, { signal }: RequestOptions = {}): Promise<Product> {
+  const response = await httpClient.get<Product>(`/products/${encodeURIComponent(id)}`, { signal });
+  return response.data;
+}
+
+export async function createProduct(input: ProductInput): Promise<Product> {
+  const response = await httpClient.post<Product>('/products', input);
+  return response.data;
+}
+
+export async function updateProduct(id: string, patch: Partial<ProductInput>): Promise<Product> {
+  const response = await httpClient.patch<Product>(`/products/${encodeURIComponent(id)}`, patch);
+  return response.data;
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  await httpClient.delete(`/products/${encodeURIComponent(id)}`);
+}
+
+export async function listCategories({ signal }: RequestOptions = {}): Promise<string[]> {
+  const response = await httpClient.get<string[]>('/products/categories', { signal });
+  return response.data;
+}
