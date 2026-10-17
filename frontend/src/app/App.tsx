@@ -1,14 +1,13 @@
-import Typography from '@mui/material/Typography';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AppProviders } from './providers';
+import { routes } from './routes';
+
+const router = createBrowserRouter(routes);
 
 export function App() {
   return (
     <AppProviders>
-      <main>
-        <Typography variant="h4" component="h1">
-          Dashboard gerencial
-        </Typography>
-      </main>
+      <RouterProvider router={router} />
     </AppProviders>
   );
 }
