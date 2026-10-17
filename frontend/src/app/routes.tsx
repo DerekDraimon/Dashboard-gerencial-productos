@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { Navigate, type RouteObject } from 'react-router-dom';
+import { LoginPage } from '../features/auth/views/LoginPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { InventoryPage } from '../features/products/InventoryPage';
 import { UsersPage } from '../features/users/UsersPage';
@@ -14,6 +15,7 @@ const PAGES: Record<NavigationId, ReactElement> = {
 };
 
 export const routes: RouteObject[] = [
+  { path: '/login', element: <LoginPage /> },
   {
     path: '/',
     element: <AppLayout />,

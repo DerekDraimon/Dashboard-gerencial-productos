@@ -145,4 +145,12 @@ describe('app routes', () => {
     await waitFor(() => expect(screen.queryByRole('navigation')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Abrir menú' })).toBeInTheDocument();
   });
+
+  it('serves the login page outside the app layout', async () => {
+    setViewport(true);
+    renderAt('/login');
+
+    expect(await screen.findByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
 });
