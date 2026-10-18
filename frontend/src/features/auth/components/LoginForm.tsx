@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { ApiError } from '../../../shared/api/api-error';
-import { UNEXPECTED_ERROR_MESSAGE } from '../../../shared/api/http-client';
+import { UNEXPECTED_ERROR_MESSAGE, apiErrorMessage } from '../../../shared/api/api-error-messages';
 
 export interface LoginCredentials {
   email: string;
@@ -25,18 +25,12 @@ export interface LoginFormProps {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const ERROR_MESSAGES: Record<string, string> = {
-  INVALID_CREDENTIALS: 'Correo o contraseña incorrectos.',
-  USER_INACTIVE: 'Tu cuenta está inactiva. Contacta a un administrador.',
-  TOO_MANY_REQUESTS: 'Demasiados intentos. Espera unos minutos e intenta de nuevo.',
-};
-
 function errorMessage(error: unknown): string | null {
   if (!error) return null;
   if (!(error instanceof ApiError)) return UNEXPECTED_ERROR_MESSAGE;
   if (error.code === 'REQUEST_CANCELED') return null;
   if (error.code === 'NETWORK_ERROR') return error.message;
-  return ERROR_MESSAGES[error.code] ?? UNEXPECTED_ERROR_MESSAGE;
+  return apiErrorMessage(error.code);
 }
 
 export function LoginForm({ onSubmit, submitting, error }: LoginFormProps) {

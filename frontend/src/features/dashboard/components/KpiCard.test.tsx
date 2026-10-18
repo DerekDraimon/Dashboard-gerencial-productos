@@ -26,7 +26,7 @@ describe('KpiCard', () => {
       <KpiCard
         title="Valor del inventario"
         value="US$ 1.644,25"
-        detail="Precio por stock"
+        detail="Suma de precios con decimales exactos"
         icon={<Inventory2Outlined />}
         tone="sage"
       />,

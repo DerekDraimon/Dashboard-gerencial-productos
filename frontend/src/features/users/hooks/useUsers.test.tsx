@@ -226,6 +226,24 @@ describe('useUsers', () => {
     expect(lastParams()).toEqual({ offset: 0, limit: 10 });
   });
 
+  it('stays on the clamped page when the list grows again', async () => {
+    const { result } = await renderLoaded();
+    act(() => result.current.pagination.setOffset(20));
+    await waitFor(() => expect(result.current.rows[0]?.id).toBe('u20'));
+    const full = directory;
+    directory = directory.slice(0, 12);
+    act(() => result.current.refresh());
+    await waitFor(() => expect(result.current.rows.map((row) => row.id)).toEqual(['u10', 'u11']));
+
+    directory = full;
+    act(() => result.current.refresh());
+
+    await waitFor(() => expect(result.current.rows).toHaveLength(10));
+    expect(result.current.rows[0]?.id).toBe('u10');
+    expect(result.current.pagination).toMatchObject({ offset: 10, page: 2 });
+    expect(lastParams()).toEqual({ offset: 10, limit: 10 });
+  });
+
   it('exposes the error and loads again on reload', async () => {
     failing = true;
     const { result } = renderHook(() => useUsers());

@@ -106,6 +106,10 @@ describe('parseEnv', () => {
     expect(parseEnv(validSource).TRUST_PROXY).toBeUndefined();
   });
 
+  it.each(['', '   '])('treats an empty TRUST_PROXY=%j as not set', (value) => {
+    expect(parseEnv({ ...validSource, TRUST_PROXY: value }).TRUST_PROXY).toBeUndefined();
+  });
+
   it.each([
     ['true', true],
     ['false', false],
@@ -119,7 +123,7 @@ describe('parseEnv', () => {
     expect(parseEnv({ ...validSource, TRUST_PROXY: value }).TRUST_PROXY).toEqual(expected);
   });
 
-  it.each(['yes', '-1', '1.5', 'not-an-ip', '10.0.0.0/33', '10.0.0.1,', ''])(
+  it.each(['yes', '-1', '1.5', 'not-an-ip', '10.0.0.0/33', '10.0.0.1,'])(
     'rejects TRUST_PROXY=%s',
     (value) => {
       expect(() => parseEnv({ ...validSource, TRUST_PROXY: value })).toThrow(/TRUST_PROXY/);

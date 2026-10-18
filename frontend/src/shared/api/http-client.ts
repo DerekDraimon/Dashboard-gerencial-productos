@@ -4,7 +4,6 @@ import { UNEXPECTED_ERROR_MESSAGE, apiErrorMessage } from './api-error-messages'
 
 const NETWORK_ERROR_MESSAGE =
   'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
-export { UNEXPECTED_ERROR_MESSAGE };
 const REQUEST_CANCELED_MESSAGE = 'La solicitud fue cancelada.';
 
 declare module 'axios' {

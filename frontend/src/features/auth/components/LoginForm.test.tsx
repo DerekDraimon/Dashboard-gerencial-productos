@@ -60,6 +60,11 @@ describe('LoginForm', () => {
       'Demasiados intentos. Espera unos minutos e intenta de nuevo.',
     ],
     [
+      new ApiError(503, 'DATABASE_UNAVAILABLE', 'x'),
+      'La base de datos no está disponible en este momento. Inténtalo de nuevo más tarde.',
+    ],
+    [new ApiError(500, 'SOMETHING_NEW', 'x'), 'Ocurrió un error inesperado. Inténtalo de nuevo.'],
+    [
       new ApiError(0, 'NETWORK_ERROR', 'No se pudo conectar con el servidor.'),
       'No se pudo conectar con el servidor.',
     ],

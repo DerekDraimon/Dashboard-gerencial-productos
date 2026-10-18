@@ -53,7 +53,7 @@ const trustProxySchema = z
       return Number(value);
     }
     const entries = value.split(',').map((entry) => entry.trim());
-    if (value === '' || !entries.every(isTrustedAddress)) {
+    if (!entries.every(isTrustedAddress)) {
       ctx.addIssue({
         code: 'custom',
         message:
@@ -87,7 +87,11 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().trim().min(1).default('http://localhost:5173'),
   SEED_ADMIN_PASSWORD: z.string().min(1).optional(),
   SEED_USER_PASSWORD: z.string().min(1).optional(),
-  TRUST_PROXY: trustProxySchema.optional(),
+  // `TRUST_PROXY=` left empty in a .env file means not set, not an invalid value.
+  TRUST_PROXY: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    trustProxySchema.optional(),
+  ),
   ...loginRateLimitEnvSchema.shape,
 });
 
