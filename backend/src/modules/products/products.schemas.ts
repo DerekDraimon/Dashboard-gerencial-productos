@@ -1,19 +1,20 @@
 import { z } from 'zod';
 import { paginationQuerySchema } from '../../shared/http/pagination.js';
+import { PRODUCT_LIMITS } from './products.constants.js';
 
-export const MAX_IMAGES = 10;
+const { titleMaxLength, descriptionMaxLength, categoryMaxLength, maxImages } = PRODUCT_LIMITS;
 
 const titleSchema = z
   .string({ error: 'title is required' })
   .trim()
   .min(1, 'title is required')
-  .max(120, 'title must be at most 120 characters');
+  .max(titleMaxLength, `title must be at most ${titleMaxLength} characters`);
 
 const descriptionSchema = z
   .string({ error: 'description is required' })
   .trim()
   .min(1, 'description is required')
-  .max(2000, 'description must be at most 2000 characters');
+  .max(descriptionMaxLength, `description must be at most ${descriptionMaxLength} characters`);
 
 /** Compared in cents with a tolerance because values like 25.99 are not exact in binary floating point. */
 function hasAtMostTwoDecimals(value: number): boolean {
@@ -30,13 +31,13 @@ const categorySchema = z
   .string({ error: 'category is required' })
   .trim()
   .min(1, 'category is required')
-  .max(60, 'category must be at most 60 characters');
+  .max(categoryMaxLength, `category must be at most ${categoryMaxLength} characters`);
 
 const imagesSchema = z
   .array(z.url({ protocol: /^https?$/, error: 'each image must be an http(s) URL' }), {
     error: 'images must be an array of URLs',
   })
-  .max(MAX_IMAGES, `images must have at most ${MAX_IMAGES} items`);
+  .max(maxImages, `images must have at most ${maxImages} items`);
 
 const stockSchema = z
   .number({ error: 'stock is required and must be a number' })

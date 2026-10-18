@@ -90,4 +90,26 @@ describe('centralized error handling', () => {
       error: { code: 'INVALID_JSON', message: 'Request body contains malformed JSON' },
     });
   });
+
+  it('answers a JSON body over the size limit with 413 PAYLOAD_TOO_LARGE', async () => {
+    const res = await request(createApp())
+      .post('/api/health')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ text: 'x'.repeat(110 * 1024) }));
+
+    expect(res.status).toBe(413);
+    expect(res.body).toEqual({
+      error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body exceeds the 100kb limit' },
+    });
+  });
+
+  it('still parses a JSON body just under the size limit', async () => {
+    const res = await request(createApp())
+      .post('/api/health')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ text: 'x'.repeat(90 * 1024) }));
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
 });

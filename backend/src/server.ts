@@ -12,7 +12,7 @@ function readEnvOrExit(): Env {
 }
 
 const env = readEnvOrExit();
-const app = createApp({ corsOrigin: env.CORS_ORIGIN });
+const app = createApp({ corsOrigin: env.CORS_ORIGIN, trustProxy: env.TRUST_PROXY });
 
 // Non-blocking: the API starts even when MongoDB is down and keeps retrying.
 connectDatabase(env.MONGODB_URI);

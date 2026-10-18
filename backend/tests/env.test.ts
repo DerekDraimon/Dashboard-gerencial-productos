@@ -101,4 +101,28 @@ describe('parseEnv', () => {
   it.each(['1w', 'abc', '0', '-5', '0m', '1.5h', '15 m'])('rejects JWT_EXPIRES_IN=%s', (value) => {
     expect(() => parseEnv({ ...validSource, JWT_EXPIRES_IN: value })).toThrow(/JWT_EXPIRES_IN/);
   });
+
+  it('leaves TRUST_PROXY undefined when it is not set', () => {
+    expect(parseEnv(validSource).TRUST_PROXY).toBeUndefined();
+  });
+
+  it.each([
+    ['true', true],
+    ['false', false],
+    ['1', 1],
+    ['0', 0],
+    ['loopback', ['loopback']],
+    ['10.0.0.1', ['10.0.0.1']],
+    ['10.0.0.0/8, 192.168.1.1, ::1', ['10.0.0.0/8', '192.168.1.1', '::1']],
+    ['fe80::/10,uniquelocal', ['fe80::/10', 'uniquelocal']],
+  ])('parses TRUST_PROXY=%s', (value, expected) => {
+    expect(parseEnv({ ...validSource, TRUST_PROXY: value }).TRUST_PROXY).toEqual(expected);
+  });
+
+  it.each(['yes', '-1', '1.5', 'not-an-ip', '10.0.0.0/33', '10.0.0.1,', ''])(
+    'rejects TRUST_PROXY=%s',
+    (value) => {
+      expect(() => parseEnv({ ...validSource, TRUST_PROXY: value })).toThrow(/TRUST_PROXY/);
+    },
+  );
 });
