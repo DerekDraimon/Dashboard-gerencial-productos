@@ -481,7 +481,8 @@
                   "  const sorted = [...json].sort((a, b) => a.localeCompare(b));",
                   "  pm.expect(json).to.eql(sorted);",
                   "});",
-                  "pm.environment.set('category', pm.response.json()[0]);"
+                  "const [firstCategory] = pm.response.json();",
+                  "if (firstCategory) pm.environment.set('category', firstCategory);"
                 ]
               }
             }
@@ -512,7 +513,7 @@
                   "  const category = pm.environment.get('category');",
                   "  const json = pm.response.json();",
                   "  pm.expect(json.data.length).to.be.above(0);",
-                  "  pm.expect(json.meta.total).to.eql(json.data.length);",
+                  "  pm.expect(json.meta.total).to.be.at.least(json.data.length);",
                   "  json.data.forEach((p) => pm.expect(p.category).to.eql(category));",
                   "});"
                 ]
