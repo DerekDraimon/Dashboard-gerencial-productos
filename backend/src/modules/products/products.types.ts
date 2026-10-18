@@ -29,6 +29,8 @@ export interface ListProductsFilter {
   offset: number;
   limit: number;
   search?: string;
+  /** Exact category name, as listed by `GET /products/categories`. */
+  category?: string;
   /** Start of a UTC day; products created from that instant on. */
   from?: Date;
   /** Start of a UTC day; the whole day is included. */

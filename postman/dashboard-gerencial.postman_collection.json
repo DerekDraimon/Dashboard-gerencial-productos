@@ -480,7 +480,8 @@
                   "  pm.expect(new Set(json).size).to.eql(json.length);",
                   "  const sorted = [...json].sort((a, b) => a.localeCompare(b));",
                   "  pm.expect(json).to.eql(sorted);",
-                  "});"
+                  "});",
+                  "pm.environment.set('category', pm.response.json()[0]);"
                 ]
               }
             }
@@ -492,6 +493,49 @@
               "raw": "{{baseUrl}}/products/categories",
               "host": ["{{baseUrl}}"],
               "path": ["products", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Filter products by category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Every product belongs to the requested category', function () {",
+                  "  const category = pm.environment.get('category');",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.length).to.be.above(0);",
+                  "  pm.expect(json.meta.total).to.eql(json.data.length);",
+                  "  json.data.forEach((p) => pm.expect(p.category).to.eql(category));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?category={{category}}&limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "{{category}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
             }
           },
           "response": []

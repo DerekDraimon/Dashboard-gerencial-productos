@@ -148,27 +148,28 @@ El token se obtiene en `POST /api/auth/login` y vence según `JWT_EXPIRES_IN`. E
 
 ### Endpoints
 
-| Método   | Ruta                       | Descripción                                                                                                      |
-| -------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `GET`    | `/api/health`              | Estado de la API y de la conexión a MongoDB                                                                      |
-| `POST`   | `/api/auth/login`          | `{ email, password }` → `{ token, user }`                                                                        |
-| `GET`    | `/api/auth/me`             | Usuario autenticado                                                                                              |
-| `GET`    | `/api/users`               | Lista paginada, más recientes primero. Query: `offset` (0), `limit` (10, máx. 100), `active`                     |
-| `GET`    | `/api/users/:id`           | Detalle de un usuario                                                                                            |
-| `POST`   | `/api/users`               | `{ email, password, name, role? }` (`role`: `ADMIN` o `USER`, por defecto `USER`)                                |
-| `PATCH`  | `/api/users/:id`           | `{ name?, role?, active? }` (al menos un campo)                                                                  |
-| `PATCH`  | `/api/users/:id/status`    | Inactiva o reactiva sin eliminar: `{ active }`                                                                   |
-| `GET`    | `/api/products`            | Lista paginada por `creationAt` descendente. Query: `offset` (0), `limit` (10, máx. 100), `search`, `from`, `to` |
-| `GET`    | `/api/products/categories` | Categorías existentes, sin repetir y en orden alfabético                                                         |
-| `GET`    | `/api/products/:id`        | Detalle de un producto                                                                                           |
-| `POST`   | `/api/products`            | `{ title, description, price, category, images?, stock }`                                                        |
-| `PATCH`  | `/api/products/:id`        | Cualquiera de esos campos (al menos uno)                                                                         |
-| `DELETE` | `/api/products/:id`        | Elimina el producto definitivamente; responde `204` sin cuerpo                                                   |
+| Método   | Ruta                       | Descripción                                                                                                                  |
+| -------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/health`              | Estado de la API y de la conexión a MongoDB                                                                                  |
+| `POST`   | `/api/auth/login`          | `{ email, password }` → `{ token, user }`                                                                                    |
+| `GET`    | `/api/auth/me`             | Usuario autenticado                                                                                                          |
+| `GET`    | `/api/users`               | Lista paginada, más recientes primero. Query: `offset` (0), `limit` (10, máx. 100), `active`                                 |
+| `GET`    | `/api/users/:id`           | Detalle de un usuario                                                                                                        |
+| `POST`   | `/api/users`               | `{ email, password, name, role? }` (`role`: `ADMIN` o `USER`, por defecto `USER`)                                            |
+| `PATCH`  | `/api/users/:id`           | `{ name?, role?, active? }` (al menos un campo)                                                                              |
+| `PATCH`  | `/api/users/:id/status`    | Inactiva o reactiva sin eliminar: `{ active }`                                                                               |
+| `GET`    | `/api/products`            | Lista paginada por `creationAt` descendente. Query: `offset` (0), `limit` (10, máx. 100), `search`, `category`, `from`, `to` |
+| `GET`    | `/api/products/categories` | Categorías existentes, sin repetir y en orden alfabético                                                                     |
+| `GET`    | `/api/products/:id`        | Detalle de un producto                                                                                                       |
+| `POST`   | `/api/products`            | `{ title, description, price, category, images?, stock }`                                                                    |
+| `PATCH`  | `/api/products/:id`        | Cualquiera de esos campos (al menos uno)                                                                                     |
+| `DELETE` | `/api/products/:id`        | Elimina el producto definitivamente; responde `204` sin cuerpo                                                               |
 
 Detalles:
 
 - Las listas responden `{ data, meta: { total, offset, limit } }`.
 - `search` busca en el título sin distinguir mayúsculas y se toma literal (no es una expresión regular).
+- `category` filtra por la categoría exacta (la que lista `GET /api/products/categories`). No lo pide el enunciado: se agregó porque el inventario se recorre por categoría.
 - `from` y `to` son fechas `YYYY-MM-DD` en UTC, inclusivas (`to` cubre el día completo) y se pueden usar por separado. Si `from` es posterior a `to` o una fecha no existe (`2026-02-30`), responde `400`.
 - Productos: `title` hasta 120 caracteres, `description` hasta 2000 y `category` hasta 60 (obligatorios, sin espacios al inicio ni al final); `price` mayor que 0 con hasta 2 decimales; `stock` entero mayor o igual a 0; `images` hasta 10 URLs `http` o `https` (por defecto `[]`).
 - Usuarios: el email no distingue mayúsculas; la contraseña tiene entre 8 y 72 caracteres, se guarda con bcrypt y nunca se devuelve. Un administrador no puede inactivarse ni cambiar su propio rol.

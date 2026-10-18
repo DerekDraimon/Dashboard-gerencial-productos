@@ -6,6 +6,7 @@ import { listProducts, type Product } from '../api/products-api';
 /** Dates are YYYY-MM-DD; empty strings mean "no filter". */
 export interface ProductFilters {
   search: string;
+  category: string;
   from: string;
   to: string;
 }
@@ -18,7 +19,7 @@ interface PageState {
   error: unknown;
 }
 
-const EMPTY_FILTERS: ProductFilters = { search: '', from: '', to: '' };
+const EMPTY_FILTERS: ProductFilters = { search: '', category: '', from: '', to: '' };
 
 export function useProducts() {
   const pagination = usePagination();
@@ -36,10 +37,10 @@ export function useProducts() {
   );
   const debounced = useDebouncedValue(typed, 300);
   const search = debounced.epoch === searchEpoch ? debounced.search : '';
-  const { from, to } = filters;
+  const { category, from, to } = filters;
   const dateRangeError = from !== '' && to !== '' && from > to;
 
-  const filterKey = JSON.stringify([search, from, to]);
+  const filterKey = JSON.stringify([search, category, from, to]);
   const [pagedFilterKey, setPagedFilterKey] = useState(filterKey);
   if (pagedFilterKey !== filterKey) {
     setPagedFilterKey(filterKey);
@@ -52,7 +53,7 @@ export function useProducts() {
   useEffect(() => {
     if (dateRangeError) return;
     const controller = new AbortController();
-    listProducts({ offset, limit, search, from, to }, { signal: controller.signal }).then(
+    listProducts({ offset, limit, search, category, from, to }, { signal: controller.signal }).then(
       (result) => {
         if (controller.signal.aborted) return;
         setPage({ key: requestKey, rows: result.data, total: result.meta.total, error: null });
@@ -64,11 +65,14 @@ export function useProducts() {
       },
     );
     return () => controller.abort();
-  }, [requestKey, refreshes, dateRangeError, offset, limit, search, from, to]);
+  }, [requestKey, refreshes, dateRangeError, offset, limit, search, category, from, to]);
 
   const setSearch = useCallback((value: string) => {
     setFilters((current) => ({ ...current, search: value }));
     if (value.trim() === '') setSearchEpoch((current) => current + 1);
+  }, []);
+  const setCategory = useCallback((value: string) => {
+    setFilters((current) => ({ ...current, category: value }));
   }, []);
   const setFrom = useCallback((value: string) => {
     setFilters((current) => ({ ...current, from: value }));
@@ -104,6 +108,7 @@ export function useProducts() {
     pagination,
     filters,
     setSearch,
+    setCategory,
     setFrom,
     setTo,
     clearFilters,

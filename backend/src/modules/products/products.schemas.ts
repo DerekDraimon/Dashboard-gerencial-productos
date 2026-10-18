@@ -90,6 +90,12 @@ export const listProductsQuerySchema = paginationQuerySchema
       .trim()
       .transform((value) => (value === '' ? undefined : value))
       .optional(),
+    category: z
+      .string({ error: 'category must be a single text value' })
+      .trim()
+      .max(categoryMaxLength, `category must be at most ${categoryMaxLength} characters`)
+      .transform((value) => (value === '' ? undefined : value))
+      .optional(),
     from: dayQuerySchema('from').optional(),
     to: dayQuerySchema('to').optional(),
   })

@@ -171,8 +171,24 @@ describe('useProducts', () => {
     await waitFor(() =>
       expect(lastParams()).toEqual({ offset: 0, limit: 10, from: '2025-01-01', to: '2025-01-31' }),
     );
-    expect(result.current.filters).toEqual({ search: '', from: '2025-01-01', to: '2025-01-31' });
+    expect(result.current.filters).toEqual({
+      search: '',
+      category: '',
+      from: '2025-01-01',
+      to: '2025-01-31',
+    });
     expect(result.current.dateRangeError).toBe(false);
+  });
+
+  it('sends the category right away and resets to the first page', async () => {
+    const { result } = await renderLoaded();
+    act(() => result.current.pagination.next());
+    await waitFor(() => expect(lastParams()).toEqual({ offset: 10, limit: 10 }));
+
+    act(() => result.current.setCategory('Libros'));
+
+    await waitFor(() => expect(lastParams()).toEqual({ offset: 0, limit: 10, category: 'Libros' }));
+    expect(result.current.filters.category).toBe('Libros');
   });
 
   it('flags a start date after the end date and skips the request', async () => {
@@ -196,12 +212,13 @@ describe('useProducts', () => {
       result.current.setSearch('Producto');
       result.current.setFrom('2025-02-01');
       result.current.setTo('2025-01-31');
+      result.current.setCategory('Libros');
       result.current.pagination.next();
     });
 
     act(() => result.current.clearFilters());
 
-    expect(result.current.filters).toEqual({ search: '', from: '', to: '' });
+    expect(result.current.filters).toEqual({ search: '', category: '', from: '', to: '' });
     expect(result.current.dateRangeError).toBe(false);
     expect(result.current.pagination.offset).toBe(0);
     await waitFor(() => expect(result.current.loading).toBe(false));
