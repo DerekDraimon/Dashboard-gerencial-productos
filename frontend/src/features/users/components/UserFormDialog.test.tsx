@@ -112,7 +112,7 @@ describe('UserFormDialog', () => {
     await userEvent.type(password, '😀'.repeat(18) + 'a');
     await submit(dialog);
     expect(
-      await within(dialog).findByText('La contraseña es demasiado larga (máximo 72 caracteres).'),
+      await within(dialog).findByText('La contraseña es demasiado larga.'),
     ).toBeInTheDocument();
     expect(requests).toHaveLength(0);
   });
@@ -226,7 +226,8 @@ describe('UserFormDialog in edit mode', () => {
       rerender(ui(false));
       rerender(ui(true));
     };
-    return { onClose, onSaved, reopen };
+    const close = () => rerender(ui(false));
+    return { onClose, onSaved, reopen, close };
   }
 
   const editDialog = () => screen.findByRole('dialog', { name: 'Editar usuario' });
@@ -313,5 +314,16 @@ describe('UserFormDialog in edit mode', () => {
     await waitFor(() =>
       expect(requests.filter((request) => request.method === 'get')).toHaveLength(2),
     );
+  });
+
+  it('keeps the loaded form, not the loading state, while the dialog closes', async () => {
+    const { close } = renderEdit();
+    await within(await editDialog()).findByLabelText('Nombre');
+
+    close();
+
+    expect(screen.queryByText('Cargando usuario…')).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('Eva')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByDisplayValue('Eva')).not.toBeInTheDocument());
   });
 });

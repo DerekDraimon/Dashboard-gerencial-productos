@@ -62,4 +62,35 @@ describe('usePagination', () => {
 
     expect(result.current).toMatchObject({ offset: 0, limit: 25, page: 1 });
   });
+
+  it.each([0, -5, Number.NaN])('ignores setLimit(%s) and keeps the current page', (limit) => {
+    const { result } = renderHook(() => usePagination({ initialLimit: 25 }));
+    act(() => result.current.next());
+
+    act(() => result.current.setLimit(limit));
+
+    expect(result.current).toMatchObject({ offset: 25, limit: 25, page: 2 });
+  });
+
+  it.each([0, -1, Number.NaN])(
+    'falls back to a limit of 10 for initialLimit %s',
+    (initialLimit) => {
+      const { result } = renderHook(() => usePagination({ initialLimit }));
+
+      expect(result.current).toMatchObject({ offset: 0, limit: 10, page: 1 });
+    },
+  );
+
+  it('goes back to the first page with the new limit when initialLimit changes', () => {
+    const { result, rerender } = renderHook(({ initialLimit }) => usePagination({ initialLimit }), {
+      initialProps: { initialLimit: 10 },
+    });
+    act(() => result.current.next());
+
+    rerender({ initialLimit: 20 });
+
+    expect(result.current).toMatchObject({ offset: 0, limit: 20, page: 1 });
+    act(() => result.current.reset());
+    expect(result.current).toMatchObject({ offset: 0, limit: 20, page: 1 });
+  });
 });

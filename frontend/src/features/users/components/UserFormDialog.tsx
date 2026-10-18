@@ -57,9 +57,10 @@ function validateEmail(value: string) {
 function validatePassword(value: string) {
   if (value === '') return 'La contraseña es obligatoria.';
   if (value.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
-  // bcrypt ignores everything past 72 bytes, so the API rejects longer passwords.
+  // bcrypt ignores everything past 72 bytes, so the API rejects longer passwords. Bytes are not
+  // characters (an emoji takes 4), so the message names no limit.
   const fits = new TextEncoder().encode(value).length <= 72;
-  return fits || 'La contraseña es demasiado larga (máximo 72 caracteres).';
+  return fits || 'La contraseña es demasiado larga.';
 }
 
 function changedFields(values: UserFormValues, original: User): UpdateUserInput {
@@ -85,7 +86,8 @@ export function UserFormDialog(props: UserFormDialogProps) {
   }
   const [loaded, setLoaded] = useState<LoadedUser>({ key: '', user: null, error: null });
   const loadKey = userId === null ? '' : `${userId}:${opening.count}:${attempt}`;
-  const current = open && loaded.key === loadKey;
+  // Closing keeps the same key, so the loaded form stays visible during the close animation.
+  const current = loaded.key === loadKey;
   const original = current ? loaded.user : null;
   const loadError = current ? loaded.error : null;
   const ready = userId === null || original !== null;

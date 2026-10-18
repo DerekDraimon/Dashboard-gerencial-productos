@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '../../../shared/api/api-error';
 import { usePagination } from '../../../shared/hooks';
 import { listUsers, type User } from '../api/users-api';
@@ -30,8 +30,13 @@ export function useUsers() {
   // Not part of requestKey: a refresh refetches in the background without showing skeletons.
   const [refreshes, setRefreshes] = useState(0);
   const [page, setPage] = useState<PageState>(EMPTY_PAGE);
+  // Total of the last successful answer: failures must not move the user to another page.
+  const [knownTotal, setKnownTotal] = useState<number | null>(null);
 
-  const { offset, limit, setOffset } = pagination;
+  const { offset: requestedOffset, limit, setOffset } = pagination;
+  // A refresh or a filter can shrink the list under the current page; show the last one instead.
+  const lastOffset = Math.max(0, Math.ceil((knownTotal ?? 0) / limit) - 1) * limit;
+  const offset = knownTotal === null ? requestedOffset : Math.min(requestedOffset, lastOffset);
   const requestKey = JSON.stringify([status, offset, limit, attempt]);
 
   useEffect(() => {
@@ -41,6 +46,7 @@ export function useUsers() {
         if (controller.signal.aborted) return;
         const { data: rows, meta } = result;
         setPage({ key: requestKey, rows, total: meta.total, error: null, refreshError: null });
+        setKnownTotal(meta.total);
       },
       (error: unknown) => {
         const canceled = error instanceof ApiError && error.code === 'REQUEST_CANCELED';
@@ -55,10 +61,16 @@ export function useUsers() {
     return () => controller.abort();
   }, [requestKey, refreshes, status, offset, limit]);
 
-  // A refresh or a filter can shrink the list under the current page; fall back to the last one.
-  const answered = page.key === requestKey && page.error === null;
-  const lastOffset = Math.max(0, Math.ceil(page.total / limit) - 1) * limit;
-  if (answered && page.rows.length === 0 && offset > lastOffset) setOffset(lastOffset);
+  const effectivePagination = useMemo(
+    () => ({
+      ...pagination,
+      offset,
+      page: Math.floor(offset / limit) + 1,
+      next: () => setOffset(offset + limit),
+      previous: () => setOffset(Math.max(0, offset - limit)),
+    }),
+    [pagination, offset, limit, setOffset],
+  );
 
   const setStatus = useCallback(
     (value: UserStatusFilter) => {
@@ -88,7 +100,7 @@ export function useUsers() {
     refreshError: page.key === requestKey ? page.refreshError : null,
     reload,
     refresh,
-    pagination,
+    pagination: effectivePagination,
     status,
     setStatus,
     clearFilters,

@@ -116,10 +116,12 @@ export function ImageUrlsField({ value, onChange, error }: ImageUrlsFieldProps) 
       >
         {value.map((url, index) => {
           const status = STATUS_STYLES[statuses[url] ?? 'loading'];
+          // The API may return duplicate URLs, so the key counts earlier copies of the same URL.
+          const copy = value.slice(0, index).filter((image) => image === url).length;
           return (
             <Box
               component="li"
-              key={url}
+              key={copy === 0 ? url : `${url}#${copy}`}
               sx={{
                 ...status.row,
                 display: 'flex',
@@ -166,7 +168,7 @@ export function ImageUrlsField({ value, onChange, error }: ImageUrlsFieldProps) 
               </Box>
               <IconButton
                 aria-label={`Quitar imagen ${index + 1}`}
-                onClick={() => onChange(value.filter((image) => image !== url))}
+                onClick={() => onChange(value.filter((_, position) => position !== index))}
                 sx={{ width: 32, height: 32, color: 'inherit' }}
               >
                 <CloseIcon fontSize="small" />
