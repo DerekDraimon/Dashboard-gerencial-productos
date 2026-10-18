@@ -1,6 +1,7 @@
 import SearchIcon from '@mui/icons-material/Search';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputAdornment from '@mui/material/InputAdornment';
+import NativeSelect from '@mui/material/NativeSelect';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import { useId } from 'react';
 import { FilterBar, FilterField } from '../../../shared/components/filter-bar';
@@ -8,8 +9,10 @@ import type { ProductFilters as Filters } from '../hooks/useProducts';
 
 export interface ProductFiltersProps {
   filters: Filters;
+  categories: string[];
   dateRangeError: boolean;
   onSearchChange: (search: string) => void;
+  onCategoryChange: (category: string) => void;
   onFromChange: (from: string) => void;
   onToChange: (to: string) => void;
   onClear: () => void;
@@ -19,14 +22,21 @@ const DATE_RANGE_ERROR = 'La fecha inicial no puede ser posterior a la final';
 
 export function ProductFilters({
   filters,
+  categories,
   dateRangeError,
   onSearchChange,
+  onCategoryChange,
   onFromChange,
   onToChange,
   onClear,
 }: ProductFiltersProps) {
   const id = useId();
   const hasFilters = Object.values(filters).some((value) => value !== '');
+  // A chosen category stays selectable even if its last product was deleted meanwhile.
+  const options =
+    filters.category === '' || categories.includes(filters.category)
+      ? categories
+      : [filters.category, ...categories];
 
   return (
     <FilterBar onClear={onClear} canClear={hasFilters}>
@@ -43,6 +53,21 @@ export function ProductFilters({
             </InputAdornment>
           }
         />
+      </FilterField>
+      <FilterField label="Categoría" htmlFor={`${id}-category`} flex="1 1 180px">
+        <NativeSelect
+          id={`${id}-category`}
+          value={filters.category}
+          input={<OutlinedInput />}
+          onChange={(event) => onCategoryChange(event.target.value)}
+        >
+          <option value="">Todas</option>
+          {options.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </NativeSelect>
       </FilterField>
       <FilterField label="Desde" htmlFor={`${id}-from`}>
         <OutlinedInput

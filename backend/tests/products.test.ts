@@ -303,6 +303,62 @@ describe('products module', () => {
       expect(titles(res.body)).toEqual(['Mouse new']);
     });
 
+    it('filters by the exact category', async () => {
+      await insertAt([
+        { title: 'Ball', category: 'Deportes', creationAt: '2026-01-01T00:00:00Z' },
+        { title: 'Racket', category: 'Deportes', creationAt: '2026-01-02T00:00:00Z' },
+        {
+          title: 'Ski boots',
+          category: 'Deportes de invierno',
+          creationAt: '2026-01-03T00:00:00Z',
+        },
+        { title: 'Novel', category: 'Libros', creationAt: '2026-01-04T00:00:00Z' },
+      ]);
+
+      const res = await user().get(`/api/products?category=${encodeURIComponent('Deportes')}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.meta.total).toBe(2);
+      expect(titles(res.body)).toEqual(['Racket', 'Ball']);
+    });
+
+    it('combines category with search and date range', async () => {
+      await insertAt([
+        { title: 'Mouse old', category: 'Electrónica', creationAt: '2026-01-01T00:00:00Z' },
+        { title: 'Mouse new', category: 'Electrónica', creationAt: '2026-03-01T00:00:00Z' },
+        { title: 'Mouse toy', category: 'Juguetes', creationAt: '2026-03-01T00:00:00Z' },
+      ]);
+
+      const res = await user().get(
+        `/api/products?category=${encodeURIComponent('Electrónica')}&search=mouse&from=2026-02-01`,
+      );
+
+      expect(titles(res.body)).toEqual(['Mouse new']);
+    });
+
+    it('ignores an empty category', async () => {
+      await insertAt([
+        { title: 'Ball', category: 'Deportes', creationAt: '2026-01-01T00:00:00Z' },
+        { title: 'Novel', category: 'Libros', creationAt: '2026-01-02T00:00:00Z' },
+      ]);
+
+      const res = await user().get('/api/products?category=%20');
+
+      expect(res.status).toBe(200);
+      expect(res.body.meta.total).toBe(2);
+    });
+
+    it.each([
+      [`category=${'x'.repeat(61)}`, 'category'],
+      ['category=Libros&category=Deportes', 'category'],
+    ])('rejects %s with 400 VALIDATION_ERROR', async (query, path) => {
+      const res = await user().get(`/api/products?${query}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+      expect(detailPaths(res.body)).toContain(path);
+    });
+
     it('rejects from after to with 400', async () => {
       const res = await user().get('/api/products?from=2026-03-16&to=2026-03-15');
 

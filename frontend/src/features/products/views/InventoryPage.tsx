@@ -15,6 +15,7 @@ import { ProductDetailDrawer } from '../components/ProductDetailDrawer';
 import { ProductFilters } from '../components/ProductFilters';
 import { ProductFormDialog } from '../components/ProductFormDialog';
 import { ProductsTable } from '../components/ProductsTable';
+import { useCategories } from '../hooks/useCategories';
 import { useDeleteProduct } from '../hooks/useDeleteProduct';
 import { useProducts } from '../hooks/useProducts';
 
@@ -27,6 +28,7 @@ export function InventoryPage() {
   const isPhone = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
   const products = useProducts();
   const { filters } = products;
+  const { categories, reload: reloadCategories } = useCategories();
   const hasFilters = Object.values(filters).some((value) => value !== '');
   const [detail, setDetail] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
@@ -93,7 +95,9 @@ export function InventoryPage() {
       <ProductFilters
         filters={filters}
         dateRangeError={products.dateRangeError}
+        categories={categories}
         onSearchChange={products.setSearch}
+        onCategoryChange={products.setCategory}
         onFromChange={products.setFrom}
         onToChange={products.setTo}
         onClear={products.clearFilters}
@@ -125,14 +129,20 @@ export function InventoryPage() {
             open={creating}
             mode="create"
             onClose={() => setCreating(false)}
-            onSaved={() => products.reload()}
+            onSaved={() => {
+              products.reload();
+              reloadCategories();
+            }}
           />
           <ProductFormDialog
             open={editing.open}
             mode="edit"
             productId={editing.id}
             onClose={() => setEditing((current) => ({ ...current, open: false }))}
-            onSaved={() => products.refresh()}
+            onSaved={() => {
+              products.refresh();
+              reloadCategories();
+            }}
           />
         </>
       )}

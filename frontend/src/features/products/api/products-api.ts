@@ -21,6 +21,7 @@ export interface ListProductsParams {
   offset: number;
   limit: number;
   search?: string;
+  category?: string;
   /** YYYY-MM-DD */
   from?: string;
   /** YYYY-MM-DD */
@@ -32,11 +33,11 @@ export interface RequestOptions {
 }
 
 export async function listProducts(
-  { offset, limit, search, from, to }: ListProductsParams,
+  { offset, limit, search, category, from, to }: ListProductsParams,
   { signal }: RequestOptions = {},
 ): Promise<ProductPage> {
   const params: Record<string, string | number> = { offset, limit };
-  for (const [key, value] of Object.entries({ search, from, to })) {
+  for (const [key, value] of Object.entries({ search, category, from, to })) {
     if (value) params[key] = value;
   }
   const response = await httpClient.get<ProductPage>('/products', { params, signal });

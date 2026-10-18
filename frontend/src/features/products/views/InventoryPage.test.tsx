@@ -28,6 +28,8 @@ let deleteFails: boolean;
 let hangLists: boolean;
 let requests: InternalAxiosRequestConfig[];
 
+let categories: string[];
+
 const ok = (config: InternalAxiosRequestConfig, data: unknown) => ({
   status: 200,
   statusText: '',
@@ -37,7 +39,7 @@ const ok = (config: InternalAxiosRequestConfig, data: unknown) => ({
 });
 
 const adapter: AxiosAdapter = async (config) => {
-  if (config.url === '/products/categories') return ok(config, []);
+  if (config.url === '/products/categories') return ok(config, categories);
   requests.push(config);
   const id = config.url?.split('/')[2];
   if (config.method === 'delete') {
@@ -106,6 +108,7 @@ const loaded = () => screen.findByText('Producto 0');
 
 beforeEach(() => {
   catalog = makeProducts(12);
+  categories = [];
   failing = false;
   deleteFails = false;
   hangLists = false;
@@ -184,6 +187,19 @@ describe('InventoryPage', () => {
     renderPage('ADMIN');
 
     expect(await screen.findByText('Todavía no hay productos')).toBeInTheDocument();
+  });
+
+  it('filters by a category picked from the loaded list', async () => {
+    categories = ['Hogar', 'Libros'];
+    renderPage('USER');
+    await loaded();
+    await screen.findByRole('option', { name: 'Libros' });
+
+    await userEvent.selectOptions(screen.getByLabelText('Categoría'), 'Libros');
+
+    await waitFor(() =>
+      expect(requests.at(-1)?.params).toEqual({ offset: 0, limit: 10, category: 'Libros' }),
+    );
   });
 
   it('says nothing matches when filters are set', async () => {

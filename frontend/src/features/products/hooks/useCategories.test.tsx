@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
 import { AxiosError } from 'axios';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -34,6 +34,16 @@ describe('useCategories', () => {
     expect(result.current.categories).toEqual(['Hogar', 'Muebles']);
     expect(requests).toHaveLength(1);
     expect(requests[0]?.url).toBe('/products/categories');
+  });
+
+  it('loads them again on reload so a new category shows up', async () => {
+    const { result } = renderHook(() => useCategories());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.reload());
+
+    await waitFor(() => expect(requests).toHaveLength(2));
+    expect(result.current.categories).toEqual(['Hogar', 'Muebles']);
   });
 
   it('leaves an empty list when the request fails', async () => {

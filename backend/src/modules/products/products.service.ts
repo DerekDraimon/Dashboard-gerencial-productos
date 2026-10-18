@@ -37,7 +37,7 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function buildListFilter({ search, from, to }: ListProductsFilter) {
+function buildListFilter({ search, category, from, to }: ListProductsFilter) {
   const creationAt: { $gte?: Date; $lt?: Date } = {};
   if (from) {
     creationAt.$gte = from;
@@ -48,6 +48,7 @@ function buildListFilter({ search, from, to }: ListProductsFilter) {
   }
   return {
     ...(search ? { title: { $regex: escapeRegex(search), $options: 'i' } } : {}),
+    ...(category ? { category } : {}),
     ...(from || to ? { creationAt } : {}),
   };
 }
