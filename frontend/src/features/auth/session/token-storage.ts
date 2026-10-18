@@ -1,4 +1,4 @@
-const TOKEN_KEY = 'dashboard-gerencial.token';
+export const TOKEN_KEY = 'dashboard-gerencial.token';
 
 // Storage can throw (private mode, blocked site data); the session then lives only in memory.
 export const tokenStorage = {

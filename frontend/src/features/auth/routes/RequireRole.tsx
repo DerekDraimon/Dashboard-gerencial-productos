@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { UserRole } from '../api/auth-api';
+import { canAccess, type UserRole } from '../../../shared/auth/user-role';
 import { useAuth } from '../context/use-auth';
 import { ForbiddenPage } from '../views/ForbiddenPage';
 
@@ -10,5 +10,5 @@ export interface RequireRoleProps {
 
 export function RequireRole({ roles, children }: RequireRoleProps) {
   const { user } = useAuth();
-  return user && roles.includes(user.role) ? children : <ForbiddenPage />;
+  return canAccess(user?.role, roles) ? children : <ForbiddenPage />;
 }

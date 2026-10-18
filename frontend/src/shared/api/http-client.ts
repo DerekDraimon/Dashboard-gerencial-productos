@@ -3,7 +3,7 @@ import { ApiError } from './api-error';
 
 const NETWORK_ERROR_MESSAGE =
   'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
-const UNEXPECTED_ERROR_MESSAGE = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+export const UNEXPECTED_ERROR_MESSAGE = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 const REQUEST_CANCELED_MESSAGE = 'La solicitud fue cancelada.';
 
 declare module 'axios' {

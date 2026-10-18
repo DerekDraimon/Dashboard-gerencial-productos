@@ -2,7 +2,7 @@ import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined';
 import type { SvgIconComponent } from '@mui/icons-material';
-import type { UserRole } from '../auth/user-role';
+import { canAccess, type UserRole } from '../auth/user-role';
 
 export type NavigationId = 'dashboard' | 'inventory' | 'users';
 
@@ -47,7 +47,7 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
 ];
 
 export function canOpen(item: NavigationItem, role: UserRole | undefined): boolean {
-  return !item.roles || (role !== undefined && item.roles.includes(role));
+  return canAccess(role, item.roles);
 }
 
 export function findNavigationItem(pathname: string): NavigationItem | undefined {

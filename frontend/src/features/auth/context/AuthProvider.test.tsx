@@ -7,10 +7,10 @@ import type { ApiError } from '../../../shared/api/api-error';
 import { httpClient } from '../../../shared/api/http-client';
 import { NotificationProvider } from '../../../shared/feedback/NotificationProvider';
 import type { AuthUser } from '../api/auth-api';
+import { TOKEN_KEY } from '../session/token-storage';
 import { AuthProvider } from './AuthProvider';
 import { useAuth } from './use-auth';
 
-const TOKEN_KEY = 'dashboard-gerencial.token';
 const EXPIRED_MESSAGE = 'Tu sesión expiró. Inicia sesión de nuevo.';
 const admin: AuthUser = {
   id: 'u1',

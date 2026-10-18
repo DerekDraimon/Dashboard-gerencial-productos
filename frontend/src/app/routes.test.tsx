@@ -1,11 +1,15 @@
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TOKEN_KEY } from '../features/auth/session/token-storage';
 import { httpClient } from '../shared/api/http-client';
 import { NAVIGATION_ITEMS } from '../shared/layout/navigation';
 import { AppProviders } from './providers';
 import { routes } from './routes';
+import { preloadPages } from '../test/preload-pages';
+
+beforeAll(preloadPages);
 
 function setViewport(isDesktop: boolean) {
   vi.stubGlobal('matchMedia', (query: string): MediaQueryList => ({
@@ -54,7 +58,7 @@ function renderAt(path: string) {
 const admin = { id: 'a1', email: 'ana@example.com', name: 'Ana', role: 'ADMIN', active: true };
 
 beforeEach(() => {
-  localStorage.setItem('dashboard-gerencial.token', 'stored-token');
+  localStorage.setItem(TOKEN_KEY, 'stored-token');
   httpClient.defaults.adapter = async (config) => ({
     status: 200,
     statusText: '',
