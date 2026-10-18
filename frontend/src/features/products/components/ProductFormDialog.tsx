@@ -8,6 +8,7 @@ import { ApiError } from '../../../shared/api/api-error';
 import { FormDialog } from '../../../shared/components/form-dialog';
 import { ErrorState, LoadingState } from '../../../shared/components/states';
 import { useNotify } from '../../../shared/feedback/use-notify';
+import { applyValidationErrors } from '../../../shared/forms/validation-errors';
 import {
   createProduct,
   getProduct,
@@ -38,11 +39,6 @@ interface LoadedProduct {
   key: string;
   values: ProductFormValues | null;
   error: unknown;
-}
-
-interface ValidationDetail {
-  path: string;
-  message: string;
 }
 
 const EMPTY_VALUES: ProductFormValues = {
@@ -113,17 +109,6 @@ function changedFields(next: ProductInput, original: ProductInput): Partial<Prod
   return Object.fromEntries(changed.map((key) => [key, next[key]]));
 }
 
-function isValidationDetail(detail: unknown): detail is ValidationDetail {
-  if (typeof detail !== 'object' || detail === null) return false;
-  const { path, message } = detail as Record<string, unknown>;
-  return typeof path === 'string' && typeof message === 'string';
-}
-
-function validationDetails(error: unknown): ValidationDetail[] {
-  if (!(error instanceof ApiError) || error.code !== 'VALIDATION_ERROR') return [];
-  return Array.isArray(error.details) ? error.details.filter(isValidationDetail) : [];
-}
-
 export function ProductFormDialog(props: ProductFormDialogProps) {
   const { open, onClose, onSaved } = props;
   const productId = props.mode === 'edit' ? props.productId : null;
@@ -191,14 +176,8 @@ export function ProductFormDialog(props: ProductFormDialogProps) {
     try {
       await save(values);
     } catch (error) {
-      const details = validationDetails(error);
-      const unmatched: string[] = [];
-      for (const { path, message } of details) {
-        const name = FIELDS.find((field) => field === path.split('.')[0]);
-        if (name) setError(name, { message });
-        else unmatched.push(message);
-      }
-      if (details.length === 0) {
+      const unmatched = applyValidationErrors(error, FIELDS, setError);
+      if (unmatched === null) {
         notify.error(error instanceof ApiError ? error.message : UNEXPECTED_ERROR);
       } else if (unmatched.length > 0) {
         notify.error(unmatched.join(' '));

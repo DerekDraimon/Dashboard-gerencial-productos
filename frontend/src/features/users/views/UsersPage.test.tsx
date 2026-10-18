@@ -51,6 +51,11 @@ const adapter: AxiosAdapter = (config) => {
     const data = directory.find((user) => user.id === id);
     return Promise.resolve({ status: 200, statusText: '', headers: {}, config, data });
   }
+  if (config.method === 'post') {
+    const created = { ...makeUser(99), ...(JSON.parse(config.data as string) as object) };
+    directory = [created, ...directory];
+    return Promise.resolve({ status: 201, statusText: '', headers: {}, config, data: created });
+  }
   if (failing) return reject(config, 500, 'INTERNAL_ERROR', 'No se pudo cargar.');
   const { offset, limit, active } = config.params as {
     offset: number;
@@ -109,6 +114,22 @@ describe('UsersPage', () => {
     expect(within(await rowOf('Usuario 1')).getByText('Activo')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Editar Usuario 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Nuevo usuario' })).toBeInTheDocument();
+  });
+
+  it('creates a user from Nuevo usuario and refreshes the list', async () => {
+    renderPage();
+    await rowOf('Usuario 0');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nuevo usuario' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Nuevo usuario' });
+    await userEvent.type(within(dialog).getByLabelText('Nombre'), 'Lucía');
+    await userEvent.type(within(dialog).getByLabelText('Correo electrónico'), 'lucia@example.com');
+    await userEvent.type(within(dialog).getByLabelText('Contraseña'), '12345678');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Crear usuario' }));
+
+    expect(await screen.findByText('Usuario creado')).toBeInTheDocument();
+    expect(await screen.findByText('Lucía')).toBeInTheDocument();
+    expect(requests.filter((request) => request.method === 'get')).toHaveLength(2);
   });
 
   it('marks the current user and disables their switch', async () => {

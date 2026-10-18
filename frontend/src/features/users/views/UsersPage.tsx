@@ -4,11 +4,12 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ErrorState } from '../../../shared/components/states';
 import { useNotify } from '../../../shared/feedback/use-notify';
 import { useAuth } from '../../auth/context/use-auth';
 import { UserFilters } from '../components/UserFilters';
+import { UserFormDialog } from '../components/UserFormDialog';
 import { UsersTable } from '../components/UsersTable';
 import { useUserStatus } from '../hooks/useUserStatus';
 import { useUsers } from '../hooks/useUsers';
@@ -28,8 +29,9 @@ export function UsersPage() {
     if (refreshError) notify.error(REFRESH_ERROR);
   }, [refreshError, notify]);
 
-  // Wired by the create and edit dialogs.
-  const openCreate = () => undefined;
+  const [creating, setCreating] = useState(false);
+  const openCreate = () => setCreating(true);
+  // Wired by the edit dialog.
   const openEdit = () => undefined;
 
   return (
@@ -86,6 +88,12 @@ export function UsersPage() {
           onEdit={openEdit}
         />
       )}
+      <UserFormDialog
+        open={creating}
+        mode="create"
+        onClose={() => setCreating(false)}
+        onSaved={users.refresh}
+      />
     </Box>
   );
 }
