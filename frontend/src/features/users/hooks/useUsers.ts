@@ -11,7 +11,11 @@ interface PageState {
   rows: User[];
   total: number;
   error: unknown;
+  /** A failed background refresh keeps the rows it could not replace. */
+  refreshError: unknown;
 }
+
+const EMPTY_PAGE: PageState = { key: '', rows: [], total: 0, error: null, refreshError: null };
 
 const ACTIVE_PARAM: Record<UserStatusFilter, boolean | undefined> = {
   all: undefined,
@@ -25,7 +29,7 @@ export function useUsers() {
   const [attempt, setAttempt] = useState(0);
   // Not part of requestKey: a refresh refetches in the background without showing skeletons.
   const [refreshes, setRefreshes] = useState(0);
-  const [page, setPage] = useState<PageState>({ key: '', rows: [], total: 0, error: null });
+  const [page, setPage] = useState<PageState>(EMPTY_PAGE);
 
   const { offset, limit, setOffset } = pagination;
   const requestKey = JSON.stringify([status, offset, limit, attempt]);
@@ -35,16 +39,26 @@ export function useUsers() {
     listUsers({ offset, limit, active: ACTIVE_PARAM[status] }, { signal: controller.signal }).then(
       (result) => {
         if (controller.signal.aborted) return;
-        setPage({ key: requestKey, rows: result.data, total: result.meta.total, error: null });
+        const { data: rows, meta } = result;
+        setPage({ key: requestKey, rows, total: meta.total, error: null, refreshError: null });
       },
       (error: unknown) => {
         const canceled = error instanceof ApiError && error.code === 'REQUEST_CANCELED';
         if (canceled || controller.signal.aborted) return;
-        setPage({ key: requestKey, rows: [], total: 0, error });
+        setPage((current) =>
+          current.key === requestKey && current.error === null
+            ? { ...current, refreshError: error }
+            : { ...EMPTY_PAGE, key: requestKey, error },
+        );
       },
     );
     return () => controller.abort();
   }, [requestKey, refreshes, status, offset, limit]);
+
+  // A refresh or a filter can shrink the list under the current page; fall back to the last one.
+  const answered = page.key === requestKey && page.error === null;
+  const lastOffset = Math.max(0, Math.ceil(page.total / limit) - 1) * limit;
+  if (answered && page.rows.length === 0 && offset > lastOffset) setOffset(lastOffset);
 
   const setStatus = useCallback(
     (value: UserStatusFilter) => {
@@ -71,6 +85,7 @@ export function useUsers() {
     total: page.total,
     loading: page.key !== requestKey,
     error: page.key === requestKey ? page.error : null,
+    refreshError: page.key === requestKey ? page.refreshError : null,
     reload,
     refresh,
     pagination,

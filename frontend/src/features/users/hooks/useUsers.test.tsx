@@ -181,6 +181,36 @@ describe('useUsers', () => {
     expect(lastParams()).toEqual({ offset: 0, limit: 10 });
   });
 
+  it('keeps the rows and reports the error when a refresh fails', async () => {
+    const { result } = await renderLoaded();
+    failing = true;
+
+    act(() => result.current.refresh());
+
+    await waitFor(() => expect(result.current.refreshError).toMatchObject({ status: 500 }));
+    expect(result.current.error).toBeNull();
+    expect(result.current.loading).toBe(false);
+    expect(result.current.rows).toHaveLength(10);
+
+    failing = false;
+    act(() => result.current.refresh());
+    await waitFor(() => expect(result.current.refreshError).toBeNull());
+    expect(result.current.rows).toHaveLength(10);
+  });
+
+  it('moves back to the last page when the list shrinks under the current one', async () => {
+    const { result } = await renderLoaded();
+    act(() => result.current.pagination.setOffset(20));
+    await waitFor(() => expect(result.current.rows[0]?.id).toBe('u20'));
+
+    directory = directory.slice(0, 12);
+    act(() => result.current.refresh());
+
+    await waitFor(() => expect(result.current.pagination.offset).toBe(10));
+    await waitFor(() => expect(result.current.rows.map((row) => row.id)).toEqual(['u10', 'u11']));
+    expect(lastParams()).toEqual({ offset: 10, limit: 10 });
+  });
+
   it('exposes the error and loads again on reload', async () => {
     failing = true;
     const { result } = renderHook(() => useUsers());
