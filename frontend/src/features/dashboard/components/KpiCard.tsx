@@ -74,7 +74,7 @@ export function KpiCard({ title, value, detail, icon, tone, loading = false }: K
         <>
           <Typography
             sx={{
-              // Scales with the card (cqi) so "US$ 1.644,25" never breaks at the comma.
+              // Scales with the card (cqi) so "$ 4.250.000" never breaks at the comma.
               fontSize: 'clamp(20px, 11cqi, 32px)',
               fontWeight: 700,
               letterSpacing: '-0.5px',

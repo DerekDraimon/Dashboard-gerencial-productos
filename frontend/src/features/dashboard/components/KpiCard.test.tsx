@@ -25,14 +25,14 @@ describe('KpiCard', () => {
     render(
       <KpiCard
         title="Valor del inventario"
-        value="US$ 1.644,25"
+        value="$ 4.250.000"
         detail="Suma de precios con decimales exactos"
         icon={<Inventory2Outlined />}
         tone="sage"
       />,
     );
 
-    const value = screen.getByText('US$ 1.644,25');
+    const value = screen.getByText('$ 4.250.000');
     expect(value).toHaveStyle({ whiteSpace: 'nowrap' });
     expect(value).not.toHaveStyle({ fontSize: '32px' });
     expect(screen.getByRole('group', { name: 'Valor del inventario' })).toHaveStyle({

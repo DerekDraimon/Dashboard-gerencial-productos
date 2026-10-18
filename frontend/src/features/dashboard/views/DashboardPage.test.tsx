@@ -107,7 +107,7 @@ describe('DashboardPage', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('img', {
-        name: `Top 5 productos más caros: Sofá US$${NBSP}1.000,00, Lámpara US$${NBSP}234,50, Balón US$${NBSP}15,00, Taza US$${NBSP}5,00, Camisa US$${NBSP}0,20`,
+        name: `Top 5 productos más caros: Sofá $${NBSP}1.000, Lámpara $${NBSP}234,50, Balón $${NBSP}15, Taza $${NBSP}5, Camisa $${NBSP}0,20`,
       }),
     ).toBeInTheDocument();
   });
@@ -118,7 +118,7 @@ describe('DashboardPage', () => {
     await waitFor(() => expect(kpi('Total de productos')).toHaveAttribute('aria-busy', 'false'));
     expect(kpi('Total de productos')).toHaveTextContent('6');
     expect(kpi('Total de productos')).toHaveTextContent('Productos registrados');
-    expect(kpi('Valor total del inventario')).toHaveTextContent('US$ 1.254,80');
+    expect(kpi('Valor total del inventario')).toHaveTextContent('$ 1.254,80');
     expect(kpi('Valor total del inventario')).toHaveTextContent(
       'Suma de precios con decimales exactos',
     );
@@ -144,7 +144,7 @@ describe('DashboardPage', () => {
     expect(cells.map((cell) => cell.textContent)).toEqual([
       'Taza',
       'Hogar',
-      `US$${NBSP}5,00`,
+      `$${NBSP}5`,
       '01/06/2025',
     ]);
     expect(screen.getByRole('link', { name: 'Ver inventario' })).toHaveAttribute(

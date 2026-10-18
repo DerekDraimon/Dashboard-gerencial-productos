@@ -22,16 +22,23 @@ describe('sumMoney', () => {
 });
 
 describe('formatMoney', () => {
-  it('formats USD with Spanish separators', () => {
-    expect(formatMoney(0)).toBe(`US$${NBSP}0,00`);
-    expect(formatMoney(24.99)).toBe(`US$${NBSP}24,99`);
-    expect(formatMoney(1234.5)).toBe(`US$${NBSP}1.234,50`);
-    expect(formatMoney(-1234.5)).toBe(`-US$${NBSP}1.234,50`);
+  it('formats Colombian pesos without cents when the amount is whole', () => {
+    expect(formatMoney(0)).toBe(`$${NBSP}0`);
+    expect(formatMoney(89900)).toBe(`$${NBSP}89.900`);
+    expect(formatMoney(4250000)).toBe(`$${NBSP}4.250.000`);
+    expect(formatMoney(-1234)).toBe(`-$${NBSP}1.234`);
+  });
+
+  it('keeps two decimals when the amount has cents instead of rounding them away', () => {
+    expect(formatMoney(24.99)).toBe(`$${NBSP}24,99`);
+    expect(formatMoney(1234.5)).toBe(`$${NBSP}1.234,50`);
+    expect(formatMoney(-1234.5)).toBe(`-$${NBSP}1.234,50`);
   });
 
   it('accepts strings and Decimals', () => {
-    expect(formatMoney('1234567.891')).toBe(`US$${NBSP}1.234.567,89`);
-    expect(formatMoney(sumMoney([0.1, 0.2]))).toBe(`US$${NBSP}0,30`);
+    expect(formatMoney('1234567.891')).toBe(`$${NBSP}1.234.567,89`);
+    expect(formatMoney(sumMoney([0.1, 0.2]))).toBe(`$${NBSP}0,30`);
+    expect(formatMoney(new Decimal('1999.999'))).toBe(`$${NBSP}2.000`);
   });
 
   it('shows a dash for invalid values instead of throwing', () => {
