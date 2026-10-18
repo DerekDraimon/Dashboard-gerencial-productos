@@ -72,9 +72,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const user = await authApi.getCurrentUser();
+      setSession((current) =>
+        current.status === 'authenticated' ? { ...current, user } : current,
+      );
+    } catch {
+      // A 401 already ended the session in onUnauthorized; anything else keeps the current user.
+    }
+  }, []);
+
   const value = useMemo<AuthContextValue>(
-    () => ({ status: session.status, user: session.user, login, logout: clearSession }),
-    [session, login, clearSession],
+    () => ({
+      status: session.status,
+      user: session.user,
+      login,
+      logout: clearSession,
+      refreshUser,
+    }),
+    [session, login, clearSession, refreshUser],
   );
 
   return (

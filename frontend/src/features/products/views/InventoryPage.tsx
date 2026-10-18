@@ -125,14 +125,14 @@ export function InventoryPage() {
             open={creating}
             mode="create"
             onClose={() => setCreating(false)}
-            onSaved={products.reload}
+            onSaved={() => products.reload()}
           />
           <ProductFormDialog
             open={editing.open}
             mode="edit"
             productId={editing.id}
             onClose={() => setEditing((current) => ({ ...current, open: false }))}
-            onSaved={products.refresh}
+            onSaved={() => products.refresh()}
           />
         </>
       )}

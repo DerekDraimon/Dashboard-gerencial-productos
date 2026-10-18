@@ -89,6 +89,7 @@ function renderPage(role: UserRole) {
     user: { id: 'u1', email: 'a@b.co', name: 'Ana', role, active: true },
     login: () => Promise.reject(new Error('unused')),
     logout: () => undefined,
+    refreshUser: () => Promise.resolve(),
   };
   render(
     <NotificationProvider>

@@ -27,6 +27,7 @@ export interface DataTableProps<Row> {
   columns: DataTableColumn<Row>[];
   rows: Row[];
   getRowId?: (row: Row) => Key;
+  getRowSx?: (row: Row) => SxProps<Theme> | undefined;
   loading?: boolean;
   emptyMessage?: ReactNode;
   minWidth?: number;
@@ -85,6 +86,7 @@ export function DataTable<Row>({
   columns,
   rows,
   getRowId,
+  getRowSx,
   loading = false,
   emptyMessage = 'No hay registros para mostrar.',
   minWidth,
@@ -115,7 +117,7 @@ export function DataTable<Row>({
     );
   } else {
     body = rows.map((row, index) => (
-      <TableRow key={getRowId ? getRowId(row) : defaultRowId(row, index)}>
+      <TableRow key={getRowId ? getRowId(row) : defaultRowId(row, index)} sx={getRowSx?.(row)}>
         {columns.map((column) => (
           <TableCell key={column.id} align={column.align} sx={bodyCellSx}>
             {renderCell(column, row)}

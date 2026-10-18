@@ -6,7 +6,7 @@ import { RequireRole } from '../features/auth/routes/RequireRole';
 import { LoginPage } from '../features/auth/views/LoginPage';
 import { LazyDashboardPage } from '../features/dashboard/views/LazyDashboardPage';
 import { InventoryPage } from '../features/products/views/InventoryPage';
-import { UsersPage } from '../features/users/UsersPage';
+import { UsersPage } from '../features/users/views/UsersPage';
 import { HOME_PATH, NAVIGATION_ITEMS, type NavigationId } from '../shared/layout/navigation';
 import { NotFoundPage } from '../shared/pages/NotFoundPage';
 import { SessionLayout } from './SessionLayout';
