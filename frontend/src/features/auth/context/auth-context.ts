@@ -8,6 +8,8 @@ export interface AuthContextValue {
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => void;
+  /** Reloads the session user (e.g. after editing yourself); a failure keeps the current one. */
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

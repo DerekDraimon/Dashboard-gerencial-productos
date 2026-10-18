@@ -182,3 +182,31 @@ describe('AuthProvider', () => {
     expect(screen.getByTestId('session')).toHaveTextContent('anonymous:none');
   });
 });
+
+describe('AuthProvider refreshUser', () => {
+  it('reloads the session user from /auth/me', async () => {
+    localStorage.setItem(TOKEN_KEY, 'stored-token');
+    routes['GET /auth/me'] = { status: 200, data: admin };
+    renderAuth();
+    expect(await session()).toHaveTextContent('authenticated:admin@example.com');
+
+    routes['GET /auth/me'] = { status: 200, data: { ...admin, name: 'Ana Ruiz' } };
+    await act(() => auth.refreshUser());
+
+    expect(auth.user?.name).toBe('Ana Ruiz');
+    expect(requests.filter((request) => request.url === '/auth/me')).toHaveLength(2);
+  });
+
+  it('keeps the current user when the refresh fails', async () => {
+    localStorage.setItem(TOKEN_KEY, 'stored-token');
+    routes['GET /auth/me'] = { status: 200, data: admin };
+    renderAuth();
+    expect(await session()).toHaveTextContent('authenticated:admin@example.com');
+
+    routes['GET /auth/me'] = { status: 500, data: { error: { code: 'X', message: 'Caído.' } } };
+    await act(() => auth.refreshUser());
+
+    expect(auth.user).toEqual(admin);
+    expect(screen.getByTestId('session')).toHaveTextContent('authenticated:admin@example.com');
+  });
+});

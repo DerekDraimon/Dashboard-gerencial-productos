@@ -10,10 +10,12 @@ import { Controller, useForm, type FieldPath } from 'react-hook-form';
 import { ApiError } from '../../../shared/api/api-error';
 import type { UserRole } from '../../../shared/auth/user-role';
 import { FormDialog } from '../../../shared/components/form-dialog';
+import { ErrorState, LoadingState } from '../../../shared/components/states';
 import { useNotify } from '../../../shared/feedback/use-notify';
 import { applyValidationErrors } from '../../../shared/forms/validation-errors';
 import { roleLabel } from '../../auth/role-label';
-import { createUser, type User } from '../api/users-api';
+import { createUser, getUser, updateUser, type UpdateUserInput, type User } from '../api/users-api';
+import { CANNOT_MODIFY_SELF_MESSAGE } from '../hooks/useUserStatus';
 
 export interface UserFormValues {
   name: string;
@@ -22,11 +24,16 @@ export interface UserFormValues {
   role: UserRole;
 }
 
-export interface UserFormDialogProps {
+export type UserFormDialogProps = {
   open: boolean;
-  mode: 'create';
   onClose: () => void;
   onSaved: (user: User) => void;
+} & ({ mode: 'create' } | { mode: 'edit'; userId: string; currentUserId: string | undefined });
+
+interface LoadedUser {
+  key: string;
+  user: User | null;
+  error: unknown;
 }
 
 const EMPTY_VALUES: UserFormValues = { name: '', email: '', password: '', role: 'USER' };
@@ -51,17 +58,37 @@ function validatePassword(value: string) {
   if (value === '') return 'La contraseña es obligatoria.';
   if (value.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
   // bcrypt ignores everything past 72 bytes, so the API rejects longer passwords.
-  return new TextEncoder().encode(value).length <= 72 || 'La contraseña admite máximo 72 bytes.';
+  const fits = new TextEncoder().encode(value).length <= 72;
+  return fits || 'La contraseña es demasiado larga (máximo 72 caracteres).';
 }
 
-export function UserFormDialog({ open, onClose, onSaved }: UserFormDialogProps) {
+function changedFields(values: UserFormValues, original: User): UpdateUserInput {
+  const patch: UpdateUserInput = {};
+  const name = values.name.trim();
+  if (name !== original.name) patch.name = name;
+  if (values.role !== original.role) patch.role = values.role;
+  return patch;
+}
+
+export function UserFormDialog(props: UserFormDialogProps) {
+  const { open, onClose, onSaved } = props;
+  const userId = props.mode === 'edit' ? props.userId : null;
+  const isSelf = props.mode === 'edit' && props.userId === props.currentUserId;
   const notify = useNotify();
   const [showPassword, setShowPassword] = useState(false);
-  const [wasOpen, setWasOpen] = useState(open);
-  if (wasOpen !== open) {
-    setWasOpen(open);
+  const [attempt, setAttempt] = useState(0);
+  // Every opening gets its own load key, so a reopened dialog never shows the previous data.
+  const [opening, setOpening] = useState({ open, count: 0 });
+  if (opening.open !== open) {
+    setOpening((current) => ({ open, count: open ? current.count + 1 : current.count }));
     if (open) setShowPassword(false);
   }
+  const [loaded, setLoaded] = useState<LoadedUser>({ key: '', user: null, error: null });
+  const loadKey = userId === null ? '' : `${userId}:${opening.count}:${attempt}`;
+  const current = open && loaded.key === loadKey;
+  const original = current ? loaded.user : null;
+  const loadError = current ? loaded.error : null;
+  const ready = userId === null || original !== null;
   const {
     control,
     register,
@@ -73,11 +100,26 @@ export function UserFormDialog({ open, onClose, onSaved }: UserFormDialogProps) 
 
   useEffect(() => {
     if (!open) return;
-    reset(EMPTY_VALUES);
-  }, [open, reset]);
+    if (userId === null) {
+      reset(EMPTY_VALUES);
+      return;
+    }
+    const controller = new AbortController();
+    getUser(userId, { signal: controller.signal }).then(
+      (user) => {
+        if (controller.signal.aborted) return;
+        reset({ ...EMPTY_VALUES, name: user.name, role: user.role });
+        setLoaded({ key: loadKey, user, error: null });
+      },
+      (error: unknown) => {
+        if (!controller.signal.aborted) setLoaded({ key: loadKey, user: null, error });
+      },
+    );
+    return () => controller.abort();
+  }, [open, userId, loadKey, reset]);
 
-  const submit = handleSubmit(async (values) => {
-    try {
+  async function save(values: UserFormValues): Promise<void> {
+    if (userId === null) {
       const user = await createUser({
         name: values.name.trim(),
         email: values.email.trim().toLowerCase(),
@@ -86,10 +128,28 @@ export function UserFormDialog({ open, onClose, onSaved }: UserFormDialogProps) 
       });
       notify.success('Usuario creado');
       onSaved(user);
-      onClose();
+    } else if (original) {
+      const patch = changedFields(values, original);
+      // Nothing changed: closing silently is the expected outcome, not an error.
+      if (Object.keys(patch).length > 0) {
+        onSaved(await updateUser(userId, patch));
+        notify.success('Usuario actualizado');
+      }
+    }
+    onClose();
+  }
+
+  const submit = handleSubmit(async (values) => {
+    try {
+      await save(values);
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'EMAIL_ALREADY_EXISTS') {
+      const code = error instanceof ApiError ? error.code : null;
+      if (code === 'EMAIL_ALREADY_EXISTS') {
         setError('email', { message: 'Ya existe un usuario con este correo.' });
+        return;
+      }
+      if (code === 'CANNOT_MODIFY_SELF') {
+        notify.error(CANNOT_MODIFY_SELF_MESSAGE);
         return;
       }
       const unmatched = applyValidationErrors(error, FIELDS, setError);
@@ -115,76 +175,96 @@ export function UserFormDialog({ open, onClose, onSaved }: UserFormDialogProps) 
     };
   }
 
-  const password = textField('password', validatePassword);
+  const creating = userId === null;
+  const password = creating ? textField('password', validatePassword) : null;
 
   return (
     <FormDialog
       open={open}
-      title="Nuevo usuario"
-      subtitle="La cuenta queda activa al crearla."
-      submitLabel="Crear usuario"
+      title={creating ? 'Nuevo usuario' : 'Editar usuario'}
+      subtitle={creating ? 'La cuenta queda activa al crearla.' : original?.email}
+      submitLabel={creating ? 'Crear usuario' : 'Guardar cambios'}
       submitting={isSubmitting}
       onClose={onClose}
-      onSubmit={(event) => void submit(event)}
+      onSubmit={(event) => {
+        if (ready) void submit(event);
+      }}
       maxWidth="xs"
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
-        <TextField label="Nombre" autoComplete="off" {...textField('name', validateName)} />
-        <TextField
-          label="Correo electrónico"
-          type="email"
-          autoComplete="off"
-          {...textField('email', validateEmail)}
-        />
-        <TextField
-          label="Contraseña"
-          type={showPassword ? 'text' : 'password'}
-          autoComplete="new-password"
-          {...password}
-          helperText={password.helperText ?? 'Mínimo 8 caracteres.'}
-          slotProps={{
-            input: {
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    onClick={() => setShowPassword((current) => !current)}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOffOutlined /> : <VisibilityOutlined />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
-        <Box component="fieldset" sx={{ border: 0, m: 0, p: 0, minWidth: 0 }}>
-          <Box component="legend" sx={{ fontSize: 13, fontWeight: 600, mb: 1, p: 0 }}>
-            Rol
-          </Box>
-          <Controller
-            name="role"
-            control={control}
-            render={({ field }) => (
-              <Box
-                sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1 }}
-              >
-                {ROLES.map((role) => (
-                  <Button
-                    key={role}
-                    variant={field.value === role ? 'contained' : 'outlined'}
-                    aria-pressed={field.value === role}
-                    onClick={() => field.onChange(role)}
-                    sx={{ minHeight: 44, fontWeight: 700 }}
-                  >
-                    {roleLabel(role)}
-                  </Button>
-                ))}
-              </Box>
-            )}
+      {!ready &&
+        (loadError ? (
+          <ErrorState
+            title="No pudimos cargar el usuario"
+            error={loadError}
+            onRetry={() => setAttempt((value) => value + 1)}
           />
+        ) : (
+          <LoadingState label="Cargando usuario…" />
+        ))}
+      {ready && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
+          <TextField label="Nombre" autoComplete="off" {...textField('name', validateName)} />
+          {creating && (
+            <>
+              <TextField
+                label="Correo electrónico"
+                type="email"
+                autoComplete="off"
+                {...textField('email', validateEmail)}
+              />
+              <TextField
+                label="Contraseña"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                {...password}
+                helperText={password?.helperText ?? 'Mínimo 8 caracteres.'}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                          onClick={() => setShowPassword((value) => !value)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOffOutlined /> : <VisibilityOutlined />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </>
+          )}
+          <Box component="fieldset" sx={{ border: 0, m: 0, p: 0, minWidth: 0 }}>
+            <Box component="legend" sx={{ fontSize: 13, fontWeight: 600, mb: 1, p: 0 }}>
+              Rol
+            </Box>
+            <Controller
+              name="role"
+              control={control}
+              render={({ field }) => (
+                <Box
+                  sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1 }}
+                >
+                  {ROLES.map((role) => (
+                    <Button
+                      key={role}
+                      variant={field.value === role ? 'contained' : 'outlined'}
+                      aria-pressed={field.value === role}
+                      disabled={isSelf}
+                      onClick={() => field.onChange(role)}
+                      sx={{ minHeight: 44, fontWeight: 700 }}
+                    >
+                      {roleLabel(role)}
+                    </Button>
+                  ))}
+                </Box>
+              )}
+            />
+          </Box>
         </Box>
-      </Box>
+      )}
     </FormDialog>
   );
 }

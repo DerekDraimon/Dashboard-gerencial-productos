@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
 import { AxiosError } from 'axios';
@@ -10,16 +10,34 @@ import { UserFormDialog } from './UserFormDialog';
 
 let requests: InternalAxiosRequestConfig[];
 let failure: { status: number; code: string; message: string; details?: unknown } | null;
+let loadFails: boolean;
+
+const eva: User = {
+  id: 'u7',
+  email: 'eva@example.com',
+  name: 'Eva',
+  role: 'USER',
+  active: true,
+  creationAt: '',
+  updatedAt: '',
+};
 
 const adapter: AxiosAdapter = (config) => {
   requests.push(config);
+  if (config.method === 'get') {
+    if (!loadFails) {
+      return Promise.resolve({ status: 200, statusText: '', headers: {}, config, data: eva });
+    }
+    const response = { status: 500, statusText: '', headers: {}, config, data: {} };
+    return Promise.reject(new AxiosError('Failed', 'ERR', config, null, response));
+  }
   if (failure) {
     const { status, ...error } = failure;
     const response = { status, statusText: '', headers: {}, config, data: { error } };
     return Promise.reject(new AxiosError('Failed', 'ERR', config, null, response));
   }
-  const body = JSON.parse(config.data as string) as Omit<User, 'id'>;
-  const data = { ...body, id: 'new', active: true, creationAt: '', updatedAt: '' };
+  const body = JSON.parse(config.data as string) as Partial<User>;
+  const data = { ...eva, ...(config.method === 'patch' ? {} : { id: 'new' }), ...body };
   return Promise.resolve({ status: 201, statusText: '', headers: {}, config, data });
 };
 
@@ -52,6 +70,7 @@ const submit = (dialog: HTMLElement) =>
 beforeEach(() => {
   requests = [];
   failure = null;
+  loadFails = false;
   httpClient.defaults.adapter = adapter;
 });
 
@@ -93,7 +112,7 @@ describe('UserFormDialog', () => {
     await userEvent.type(password, '😀'.repeat(18) + 'a');
     await submit(dialog);
     expect(
-      await within(dialog).findByText('La contraseña admite máximo 72 bytes.'),
+      await within(dialog).findByText('La contraseña es demasiado larga (máximo 72 caracteres).'),
     ).toBeInTheDocument();
     expect(requests).toHaveLength(0);
   });
@@ -183,5 +202,116 @@ describe('UserFormDialog', () => {
     expect(await within(dialog).findByText('Nombre inválido.')).toBeInTheDocument();
     expect(await screen.findByText('Campo no permitido.')).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe('UserFormDialog in edit mode', () => {
+  function renderEdit(currentUserId = 'u1') {
+    const onClose = vi.fn();
+    const onSaved = vi.fn();
+    const ui = (open: boolean) => (
+      <NotificationProvider>
+        <UserFormDialog
+          open={open}
+          mode="edit"
+          userId="u7"
+          currentUserId={currentUserId}
+          onClose={onClose}
+          onSaved={onSaved}
+        />
+      </NotificationProvider>
+    );
+    const { rerender } = render(ui(true));
+    const reopen = () => {
+      rerender(ui(false));
+      rerender(ui(true));
+    };
+    return { onClose, onSaved, reopen };
+  }
+
+  const editDialog = () => screen.findByRole('dialog', { name: 'Editar usuario' });
+  const save = (dialog: HTMLElement) =>
+    userEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+
+  it('loads the user and prefills name, role and the read-only email', async () => {
+    renderEdit();
+    const dialog = await editDialog();
+
+    expect(await within(dialog).findByLabelText('Nombre')).toHaveValue('Eva');
+    expect(within(dialog).getByText('eva@example.com')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Usuario' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(dialog).queryByLabelText('Correo electrónico')).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Contraseña')).not.toBeInTheDocument();
+    expect(requests[0]?.url).toBe('/users/u7');
+  });
+
+  it('sends only the changed role', async () => {
+    const { onSaved, onClose } = renderEdit();
+    const dialog = await editDialog();
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Administrador' }));
+
+    await save(dialog);
+
+    expect(await screen.findByText('Usuario actualizado')).toBeInTheDocument();
+    const patch = requests.at(-1);
+    expect([patch?.method, patch?.url]).toEqual(['patch', '/users/u7']);
+    expect(JSON.parse(patch?.data as string)).toEqual({ role: 'ADMIN' });
+    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ role: 'ADMIN' }));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('closes without a request when nothing changed', async () => {
+    const { onClose, onSaved } = renderEdit();
+    const dialog = await editDialog();
+    await within(dialog).findByLabelText('Nombre');
+
+    await save(dialog);
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(requests.filter((request) => request.method === 'patch')).toHaveLength(0);
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('locks the role when editing yourself and explains a self conflict', async () => {
+    failure = { status: 409, code: 'CANNOT_MODIFY_SELF', message: 'Self.' };
+    renderEdit('u7');
+    const dialog = await editDialog();
+
+    expect(await within(dialog).findByRole('button', { name: 'Administrador' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Usuario' })).toBeDisabled();
+    await userEvent.type(within(dialog).getByLabelText('Nombre'), ' Ruiz');
+    await save(dialog);
+
+    expect(
+      await screen.findByText('No puedes inactivarte ni cambiar tu propio rol.'),
+    ).toBeInTheDocument();
+    expect(JSON.parse(requests.at(-1)?.data as string)).toEqual({ name: 'Eva Ruiz' });
+  });
+
+  it('shows the load error and retries', async () => {
+    loadFails = true;
+    renderEdit();
+    const dialog = await editDialog();
+
+    const retry = await within(dialog).findByRole('button', { name: 'Reintentar' });
+    expect(within(dialog).queryByLabelText('Nombre')).not.toBeInTheDocument();
+    loadFails = false;
+    await userEvent.click(retry);
+
+    expect(await within(dialog).findByLabelText('Nombre')).toHaveValue('Eva');
+  });
+
+  it('fetches the user again on every opening', async () => {
+    const { reopen } = renderEdit();
+    await within(await editDialog()).findByLabelText('Nombre');
+
+    reopen();
+
+    await waitFor(() =>
+      expect(requests.filter((request) => request.method === 'get')).toHaveLength(2),
+    );
   });
 });

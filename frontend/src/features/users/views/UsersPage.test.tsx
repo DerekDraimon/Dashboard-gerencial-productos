@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
 import { AxiosError } from 'axios';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { httpClient } from '../../../shared/api/http-client';
 import { ConfirmProvider } from '../../../shared/components/confirm-dialog';
 import { NotificationProvider } from '../../../shared/feedback/NotificationProvider';
@@ -46,8 +46,8 @@ const adapter: AxiosAdapter = (config) => {
       return reject(config, statusError.status, statusError.code, statusError.message);
     }
     const id = config.url?.split('/')[2];
-    const { active } = JSON.parse(config.data as string) as { active: boolean };
-    directory = directory.map((user) => (user.id === id ? { ...user, active } : user));
+    const patch = JSON.parse(config.data as string) as Partial<User>;
+    directory = directory.map((user) => (user.id === id ? { ...user, ...patch } : user));
     const data = directory.find((user) => user.id === id);
     return Promise.resolve({ status: 200, statusText: '', headers: {}, config, data });
   }
@@ -55,6 +55,11 @@ const adapter: AxiosAdapter = (config) => {
     const created = { ...makeUser(99), ...(JSON.parse(config.data as string) as object) };
     directory = [created, ...directory];
     return Promise.resolve({ status: 201, statusText: '', headers: {}, config, data: created });
+  }
+  const id = config.url?.split('/')[2];
+  if (id) {
+    const data = directory.find((user) => user.id === id);
+    return Promise.resolve({ status: 200, statusText: '', headers: {}, config, data });
   }
   if (failing) return reject(config, 500, 'INTERNAL_ERROR', 'No se pudo cargar.');
   const { offset, limit, active } = config.params as {
@@ -67,12 +72,15 @@ const adapter: AxiosAdapter = (config) => {
   return Promise.resolve({ status: 200, statusText: '', headers: {}, config, data });
 };
 
+let refreshUser: Mock<() => Promise<void>>;
+
 function renderPage() {
   const auth: AuthContextValue = {
     status: 'authenticated',
     user: { id: 'u0', email: 'user0@example.com', name: 'Usuario 0', role: 'ADMIN', active: true },
     login: () => Promise.reject(new Error('unused')),
     logout: () => undefined,
+    refreshUser,
   };
   render(
     <NotificationProvider>
@@ -97,6 +105,7 @@ beforeEach(() => {
   ];
   failing = false;
   statusError = null;
+  refreshUser = vi.fn(() => Promise.resolve());
   requests = [];
   httpClient.defaults.adapter = adapter;
 });
@@ -130,6 +139,32 @@ describe('UsersPage', () => {
     expect(await screen.findByText('Usuario creado')).toBeInTheDocument();
     expect(await screen.findByText('Lucía')).toBeInTheDocument();
     expect(requests.filter((request) => request.method === 'get')).toHaveLength(2);
+  });
+
+  it('edits a user from the row icon and updates the row in place', async () => {
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar Usuario 1' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Editar usuario' });
+    await userEvent.type(await within(dialog).findByLabelText('Nombre'), ' Pérez');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(await screen.findByText('Usuario actualizado')).toBeInTheDocument();
+    expect(await screen.findByText('Usuario 1 Pérez')).toBeInTheDocument();
+    expect(refreshUser).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(requests.filter((request) => request.params !== undefined)).toHaveLength(2),
+    );
+  });
+
+  it('refreshes the session user after editing yourself', async () => {
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar Usuario 0' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Editar usuario' });
+    await userEvent.type(await within(dialog).findByLabelText('Nombre'), ' Admin');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(await screen.findByText('Usuario 0 Admin')).toBeInTheDocument();
+    expect(refreshUser).toHaveBeenCalledTimes(1);
   });
 
   it('marks the current user and disables their switch', async () => {

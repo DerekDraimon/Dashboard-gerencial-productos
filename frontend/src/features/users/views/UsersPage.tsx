@@ -10,6 +10,7 @@ import { useNotify } from '../../../shared/feedback/use-notify';
 import { useAuth } from '../../auth/context/use-auth';
 import { UserFilters } from '../components/UserFilters';
 import { UserFormDialog } from '../components/UserFormDialog';
+import type { User } from '../api/users-api';
 import { UsersTable } from '../components/UsersTable';
 import { useUserStatus } from '../hooks/useUserStatus';
 import { useUsers } from '../hooks/useUsers';
@@ -17,7 +18,7 @@ import { useUsers } from '../hooks/useUsers';
 const REFRESH_ERROR = 'No se pudo actualizar la lista de usuarios.';
 
 export function UsersPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
   const notify = useNotify();
@@ -31,8 +32,15 @@ export function UsersPage() {
 
   const [creating, setCreating] = useState(false);
   const openCreate = () => setCreating(true);
-  // Wired by the edit dialog.
-  const openEdit = () => undefined;
+  // The id outlives `open` so the dialog keeps its content during the closing transition.
+  const [editing, setEditing] = useState({ id: '', open: false });
+  const openEdit = (target: User) => setEditing({ id: target.id, open: true });
+
+  function handleEdited(saved: User) {
+    users.updateLocally(saved.id, saved);
+    users.refresh();
+    if (saved.id === user?.id) void refreshUser();
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -92,7 +100,15 @@ export function UsersPage() {
         open={creating}
         mode="create"
         onClose={() => setCreating(false)}
-        onSaved={users.refresh}
+        onSaved={() => users.refresh()}
+      />
+      <UserFormDialog
+        open={editing.open}
+        mode="edit"
+        userId={editing.id}
+        currentUserId={user?.id}
+        onClose={() => setEditing((current) => ({ ...current, open: false }))}
+        onSaved={handleEdited}
       />
     </Box>
   );
