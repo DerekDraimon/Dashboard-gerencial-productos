@@ -56,15 +56,17 @@ function renderAt(path: string) {
 }
 
 const admin = { id: 'a1', email: 'ana@example.com', name: 'Ana', role: 'ADMIN', active: true };
+let me: Omit<typeof admin, 'role'> & { role: string };
 
 beforeEach(() => {
+  me = admin;
   localStorage.setItem(TOKEN_KEY, 'stored-token');
   httpClient.defaults.adapter = async (config) => ({
     status: 200,
     statusText: '',
     headers: {},
     config,
-    data: config.url === '/auth/me' ? admin : { data: [], meta: { total: 0 } },
+    data: config.url === '/auth/me' ? me : { data: [], meta: { total: 0 } },
   });
 });
 
@@ -104,6 +106,16 @@ describe('app routes', () => {
       'page',
     );
     expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('tells a USER that the inventory is read only in its subtitle', async () => {
+    setViewport(true);
+    me = { ...admin, role: 'USER' };
+    renderAt('/inventory');
+
+    expect(await screen.findByRole('heading', { name: 'Inventario' })).toBeInTheDocument();
+    expect(await screen.findByText('Consulta los productos de la tienda')).toBeInTheDocument();
+    expect(screen.queryByText('Gestiona los productos de la tienda')).not.toBeInTheDocument();
   });
 
   it('shows the not found page with a link back to the dashboard', async () => {

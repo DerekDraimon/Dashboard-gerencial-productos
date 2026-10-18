@@ -190,8 +190,8 @@ describe('UserFormDialog', () => {
       code: 'VALIDATION_ERROR',
       message: 'Datos inválidos.',
       details: [
-        { path: 'name', message: 'Nombre inválido.' },
-        { path: 'extra', message: 'Campo no permitido.' },
+        { path: 'name', message: 'name is required' },
+        { path: 'extra', message: 'extra is not allowed' },
       ],
     };
     const { dialog, onClose } = renderDialog();
@@ -199,8 +199,10 @@ describe('UserFormDialog', () => {
 
     await submit(dialog);
 
-    expect(await within(dialog).findByText('Nombre inválido.')).toBeInTheDocument();
-    expect(await screen.findByText('Campo no permitido.')).toBeInTheDocument();
+    expect(await within(dialog).findByText('Revisa este campo.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Algunos datos no son válidos. Revisa el formulario.'),
+    ).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 });

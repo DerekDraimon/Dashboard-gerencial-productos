@@ -44,11 +44,16 @@ export async function seedUsers(passwords: SeedPasswords): Promise<SeedResult> {
   const accounts: { email: string; name: string; role: UserRole; password: string }[] = [
     {
       email: 'admin@dashboard.test',
-      name: 'Admin',
+      name: 'Administrador',
       role: 'ADMIN',
       password: passwords.adminPassword,
     },
-    { email: 'user@dashboard.test', name: 'User', role: 'USER', password: passwords.userPassword },
+    {
+      email: 'user@dashboard.test',
+      name: 'Usuario de prueba',
+      role: 'USER',
+      password: passwords.userPassword,
+    },
   ];
 
   const result: SeedResult = { created: [], skipped: [] };

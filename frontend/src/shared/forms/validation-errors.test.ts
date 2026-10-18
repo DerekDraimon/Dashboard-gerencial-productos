@@ -9,22 +9,26 @@ interface Values {
 
 const FIELDS = ['name', 'tags'] as const;
 
+const SUMMARY = 'Algunos datos no son válidos. Revisa el formulario.';
+const FIELD_MESSAGE = 'Revisa este campo.';
+
 function validationError(details: unknown) {
-  return new ApiError(400, 'VALIDATION_ERROR', 'Datos inválidos.', details);
+  return new ApiError(400, 'VALIDATION_ERROR', SUMMARY, details);
 }
 
 describe('applyValidationErrors', () => {
-  it('sets matched fields by their first path segment and returns the leftovers', () => {
+  it('marks matched fields in Spanish and summarizes the leftovers once, never in English', () => {
     const setError = vi.fn();
     const error = validationError([
-      { path: 'name', message: 'Nombre inválido.' },
-      { path: 'tags.1', message: 'Etiqueta inválida.' },
-      { path: 'extra', message: 'Campo no permitido.' },
+      { path: 'name', message: 'name is required' },
+      { path: 'tags.1', message: 'tag is invalid' },
+      { path: 'extra', message: 'extra is not allowed' },
+      { path: 'other', message: 'other is not allowed' },
     ]);
 
-    expect(applyValidationErrors<Values>(error, FIELDS, setError)).toEqual(['Campo no permitido.']);
-    expect(setError).toHaveBeenCalledWith('name', { message: 'Nombre inválido.' });
-    expect(setError).toHaveBeenCalledWith('tags', { message: 'Etiqueta inválida.' });
+    expect(applyValidationErrors<Values>(error, FIELDS, setError)).toEqual([SUMMARY]);
+    expect(setError).toHaveBeenCalledWith('name', { message: FIELD_MESSAGE });
+    expect(setError).toHaveBeenCalledWith('tags', { message: FIELD_MESSAGE });
     expect(setError).toHaveBeenCalledTimes(2);
   });
 
@@ -54,10 +58,10 @@ describe('applyValidationErrors', () => {
       'name',
       { path: 'name' },
       { path: 1, message: 'x' },
-      { path: 'extra', message: 'Campo no permitido.' },
+      { path: 'extra', message: 'extra is not allowed' },
     ]);
 
-    expect(applyValidationErrors<Values>(error, FIELDS, setError)).toEqual(['Campo no permitido.']);
+    expect(applyValidationErrors<Values>(error, FIELDS, setError)).toEqual([SUMMARY]);
     expect(setError).not.toHaveBeenCalled();
   });
 });

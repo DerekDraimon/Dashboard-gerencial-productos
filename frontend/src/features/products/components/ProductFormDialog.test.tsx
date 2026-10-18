@@ -139,10 +139,10 @@ describe('ProductFormDialog', () => {
           code: 'VALIDATION_ERROR',
           message: 'Datos inválidos',
           details: [
-            { path: 'title', message: 'Título repetido.' },
-            { path: 'price', message: 'Precio fuera de rango.' },
-            { path: 'color', message: 'Campo no permitido.' },
-            { path: 5, message: 'Ruta inválida.' },
+            { path: 'title', message: 'title is required' },
+            { path: 'price', message: 'price is out of range' },
+            { path: 'color', message: 'color is not allowed' },
+            { path: 5, message: 'bad path' },
             null,
           ],
         },
@@ -153,10 +153,13 @@ describe('ProductFormDialog', () => {
     await fillValid();
     await save();
 
-    expect(await screen.findByText('Título repetido.')).toBeInTheDocument();
-    expect(screen.getByText('Precio fuera de rango.')).toBeInTheDocument();
-    expect(await screen.findByText('Campo no permitido.')).toBeInTheDocument();
-    expect(screen.queryByText('Ruta inválida.')).not.toBeInTheDocument();
+    expect(await screen.findAllByText('Revisa este campo.')).toHaveLength(2);
+    expect(field('Título')).toHaveAttribute('aria-invalid', 'true');
+    expect(field('Precio')).toHaveAttribute('aria-invalid', 'true');
+    expect(
+      await screen.findByText('Algunos datos no son válidos. Revisa el formulario.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/is not allowed|bad path/)).not.toBeInTheDocument();
   });
 
   it('creates the product with the exact payload, then notifies and closes', async () => {
@@ -185,7 +188,7 @@ describe('ProductFormDialog', () => {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Datos inválidos',
-          details: [{ path: 'title', message: 'Ese título no es válido.' }],
+          details: [{ path: 'title', message: 'title is required' }],
         },
       },
     };
@@ -194,7 +197,7 @@ describe('ProductFormDialog', () => {
     await fillValid();
     await save();
 
-    expect(await screen.findByText('Ese título no es válido.')).toBeInTheDocument();
+    expect(await screen.findByText('Revisa este campo.')).toBeInTheDocument();
     expect(field('Título')).toHaveAttribute('aria-invalid', 'true');
     expect(onClose).not.toHaveBeenCalled();
   });
@@ -202,14 +205,16 @@ describe('ProductFormDialog', () => {
   it('shows an error toast for other failures and stays open', async () => {
     postError = {
       status: 500,
-      body: { error: { code: 'INTERNAL_ERROR', message: 'Falló el servidor.' } },
+      body: { error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' } },
     };
     const { onClose, onSaved } = renderDialog();
 
     await fillValid();
     await save();
 
-    expect(await screen.findByText('Falló el servidor.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Ocurrió un error en el servidor. Inténtalo de nuevo.'),
+    ).toBeInTheDocument();
     expect(onSaved).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog', { name: 'Nuevo producto' })).toBeInTheDocument();

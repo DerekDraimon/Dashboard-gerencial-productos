@@ -21,6 +21,25 @@ describe('KpiCard', () => {
     expect(card).toHaveAttribute('aria-busy', 'false');
   });
 
+  it('keeps a money value on one line and scales its font to the card width', () => {
+    render(
+      <KpiCard
+        title="Valor del inventario"
+        value="US$ 1.644,25"
+        detail="Precio por stock"
+        icon={<Inventory2Outlined />}
+        tone="sage"
+      />,
+    );
+
+    const value = screen.getByText('US$ 1.644,25');
+    expect(value).toHaveStyle({ whiteSpace: 'nowrap' });
+    expect(value).not.toHaveStyle({ fontSize: '32px' });
+    expect(screen.getByRole('group', { name: 'Valor del inventario' })).toHaveStyle({
+      containerType: 'inline-size',
+    });
+  });
+
   it('shows a busy skeleton instead of the value while loading', () => {
     render(
       <KpiCard

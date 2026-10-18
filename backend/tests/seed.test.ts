@@ -55,9 +55,9 @@ describe('seedUsers', () => {
     });
 
     const users = await UserModel.find().select('+password').sort({ email: 1 }).lean();
-    expect(users.map((u) => [u.email, u.role, u.active])).toEqual([
-      ['admin@dashboard.test', 'ADMIN', true],
-      ['user@dashboard.test', 'USER', true],
+    expect(users.map((u) => [u.email, u.name, u.role, u.active])).toEqual([
+      ['admin@dashboard.test', 'Administrador', 'ADMIN', true],
+      ['user@dashboard.test', 'Usuario de prueba', 'USER', true],
     ]);
     expect(await bcrypt.compare('Admin123!', users[0]?.password ?? '')).toBe(true);
     expect(await bcrypt.compare('User1234!', users[1]?.password ?? '')).toBe(true);

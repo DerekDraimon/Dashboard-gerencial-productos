@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Product } from '../../products/api/products-api';
 import type { CategoryShare } from '../metrics/dashboard-metrics';
 import { CategoryDonut } from './CategoryDonut';
@@ -93,6 +93,34 @@ describe('TopPricesChart', () => {
       `US$${NBSP}80,00`,
       `US$${NBSP}5,00`,
     ]);
+  });
+
+  describe('long titles', () => {
+    const long = [product('Auriculares inalámbricos con estuche', 99)];
+    const titleTick = (container: HTMLElement) =>
+      container.querySelector('.recharts-cartesian-axis-tick-value')?.textContent;
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('truncates them to 16 characters on phones', () => {
+      const { container } = render(<TopPricesChart products={long} />);
+
+      expect(titleTick(container)).toBe('Auriculares ina…');
+    });
+
+    it('lets them use the wider axis on lg+ screens', () => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: true,
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+      }));
+      const { container } = render(<TopPricesChart products={long} />);
+
+      expect(titleTick(container)).toBe('Auriculares inalámbrico…');
+    });
   });
 
   it('summarizes the prices for screen readers', () => {
