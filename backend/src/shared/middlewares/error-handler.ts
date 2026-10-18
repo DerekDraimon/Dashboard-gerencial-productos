@@ -1,11 +1,21 @@
 import type { ErrorRequestHandler } from 'express';
 import { AppError, type ErrorResponseBody } from '../errors/app-error.js';
+import { JSON_BODY_LIMIT } from '../http/body-limit.js';
 
 function isJsonParseError(error: unknown): boolean {
   return (
     error instanceof SyntaxError &&
     'type' in error &&
     (error as { type?: unknown }).type === 'entity.parse.failed'
+  );
+}
+
+/** body-parser raises a plain HTTP error with this `type` when the body exceeds its `limit`. */
+function isPayloadTooLargeError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { type?: unknown }).type === 'entity.too.large'
   );
 }
 
@@ -30,6 +40,17 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, nex
       error: { code: 'INVALID_JSON', message: 'Request body contains malformed JSON' },
     };
     res.status(400).json(body);
+    return;
+  }
+
+  if (isPayloadTooLargeError(error)) {
+    const body: ErrorResponseBody = {
+      error: {
+        code: 'PAYLOAD_TOO_LARGE',
+        message: `Request body exceeds the ${JSON_BODY_LIMIT} limit`,
+      },
+    };
+    res.status(413).json(body);
     return;
   }
 

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ImageUrlsField } from './ImageUrlsField';
 
 function Harness({ initial = [] }: { initial?: string[] }) {
@@ -88,5 +88,28 @@ describe('ImageUrlsField', () => {
 
     expect(rows()[0]).toHaveTextContent('OK');
     expect(rows()[1]).toHaveTextContent('No carga');
+  });
+
+  describe('with duplicate urls from the API', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('renders every row without a key warning and removes only the clicked one', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const a = 'https://example.com/a.png';
+      const b = 'https://example.com/b.png';
+      render(<Harness initial={[a, b, a]} />);
+
+      expect(rows()).toHaveLength(3);
+      expect(consoleError).not.toHaveBeenCalled();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Quitar imagen 3' }));
+
+      expect(rows()).toHaveLength(2);
+      expect(rows()[0]).toHaveTextContent(a);
+      expect(rows()[1]).toHaveTextContent(b);
+      expect(consoleError).not.toHaveBeenCalled();
+    });
   });
 });

@@ -1,6 +1,8 @@
 import type { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form';
 import { ApiError } from '../api/api-error';
 
+const FIELD_MESSAGE = 'Revisa este campo.';
+
 interface ValidationDetail {
   path: string;
   message: string;
@@ -13,8 +15,9 @@ function isValidationDetail(detail: unknown): detail is ValidationDetail {
 }
 
 /**
- * Puts each `400 VALIDATION_ERROR` detail on its form field. Returns the messages no field
- * could show, or null when the error carries no details (the caller reports it as a whole).
+ * Marks the field of each `400 VALIDATION_ERROR` detail. The detail text is the server's English,
+ * so fields get a fixed Spanish hint and details without a field collapse into the error's
+ * (already Spanish) summary. Returns null when there are no details (the caller reports it).
  */
 export function applyValidationErrors<Values extends FieldValues>(
   error: unknown,
@@ -25,11 +28,11 @@ export function applyValidationErrors<Values extends FieldValues>(
   const details = Array.isArray(error.details) ? error.details.filter(isValidationDetail) : [];
   if (details.length === 0) return null;
 
-  const unmatched: string[] = [];
-  for (const { path, message } of details) {
+  let unmatched = false;
+  for (const { path } of details) {
     const name = fields.find((field) => field === path.split('.')[0]);
-    if (name) setError(name, { message });
-    else unmatched.push(message);
+    if (name) setError(name, { message: FIELD_MESSAGE });
+    else unmatched = true;
   }
-  return unmatched;
+  return unmatched ? [error.message] : [];
 }

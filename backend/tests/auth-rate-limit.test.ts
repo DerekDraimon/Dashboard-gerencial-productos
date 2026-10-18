@@ -105,4 +105,42 @@ describe('login rate limit', () => {
 
     expect(res.status).toBe(200);
   });
+
+  async function exhaustFrom(app: ReturnType<typeof createApp>, forwardedFor: string) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      await request(app)
+        .post('/api/auth/login')
+        .set('X-Forwarded-For', forwardedFor)
+        .send(wrongCredentials);
+    }
+  }
+
+  it('keys on the X-Forwarded-For client IP when trust proxy is configured', async () => {
+    const app = createApp({ trustProxy: 1 });
+    await exhaustFrom(app, '203.0.113.10');
+
+    const blocked = await request(app)
+      .post('/api/auth/login')
+      .set('X-Forwarded-For', '203.0.113.10')
+      .send(credentials);
+    const otherClient = await request(app)
+      .post('/api/auth/login')
+      .set('X-Forwarded-For', '203.0.113.20')
+      .send(credentials);
+
+    expect(blocked.status).toBe(429);
+    expect(otherClient.status).toBe(200);
+  });
+
+  it('ignores X-Forwarded-For when trust proxy is not configured', async () => {
+    const app = createApp();
+    await exhaustFrom(app, '203.0.113.10');
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('X-Forwarded-For', '203.0.113.20')
+      .send(credentials);
+
+    expect(res.status).toBe(429);
+  });
 });

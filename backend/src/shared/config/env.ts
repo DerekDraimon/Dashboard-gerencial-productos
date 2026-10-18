@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { config as loadDotenv } from 'dotenv';
 import { z } from 'zod';
 
@@ -19,6 +20,49 @@ export const loginRateLimitEnvSchema = z.object({
   LOGIN_RATE_LIMIT_WINDOW_MS: positiveInteger('LOGIN_RATE_LIMIT_WINDOW_MS', 900_000),
   LOGIN_RATE_LIMIT_MAX: positiveInteger('LOGIN_RATE_LIMIT_MAX', 10),
 });
+
+/** The values Express accepts for `app.set('trust proxy', value)`, minus the function form. */
+export type TrustProxy = boolean | number | string[];
+
+const TRUST_PROXY_NAMES = new Set(['loopback', 'linklocal', 'uniquelocal']);
+
+function isTrustedAddress(entry: string): boolean {
+  if (TRUST_PROXY_NAMES.has(entry)) {
+    return true;
+  }
+  const [address = '', prefix, ...rest] = entry.split('/');
+  const version = isIP(address);
+  if (version === 0 || rest.length > 0) {
+    return false;
+  }
+  if (prefix === undefined) {
+    return true;
+  }
+  const maxPrefix = version === 4 ? 32 : 128;
+  return /^\d+$/.test(prefix) && Number(prefix) <= maxPrefix;
+}
+
+const trustProxySchema = z
+  .string()
+  .trim()
+  .transform((value, ctx): TrustProxy => {
+    if (value === 'true' || value === 'false') {
+      return value === 'true';
+    }
+    if (/^\d+$/.test(value)) {
+      return Number(value);
+    }
+    const entries = value.split(',').map((entry) => entry.trim());
+    if (value === '' || !entries.every(isTrustedAddress)) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'TRUST_PROXY must be true, false, a hop count or a comma-separated list of IP addresses/subnets (e.g. 1, loopback, 10.0.0.0/8)',
+      });
+      return z.NEVER;
+    }
+    return entries;
+  });
 
 const JWT_EXPIRES_IN_PATTERN = /^[1-9]\d*[smhd]?$/;
 
@@ -43,6 +87,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().trim().min(1).default('http://localhost:5173'),
   SEED_ADMIN_PASSWORD: z.string().min(1).optional(),
   SEED_USER_PASSWORD: z.string().min(1).optional(),
+  TRUST_PROXY: trustProxySchema.optional(),
   ...loginRateLimitEnvSchema.shape,
 });
 

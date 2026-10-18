@@ -16,8 +16,20 @@ export interface Pagination {
   reset: () => void;
 }
 
-export function usePagination({ initialLimit = 10 }: PaginationOptions = {}): Pagination {
+const DEFAULT_LIMIT = 10;
+
+const isValidLimit = (limit: number) => Number.isInteger(limit) && limit > 0;
+
+export function usePagination({
+  initialLimit: requestedLimit = DEFAULT_LIMIT,
+}: PaginationOptions = {}): Pagination {
+  const initialLimit = isValidLimit(requestedLimit) ? requestedLimit : DEFAULT_LIMIT;
   const [state, setState] = useState({ offset: 0, limit: initialLimit });
+  const [syncedLimit, setSyncedLimit] = useState(initialLimit);
+  if (syncedLimit !== initialLimit) {
+    setSyncedLimit(initialLimit);
+    setState({ offset: 0, limit: initialLimit });
+  }
 
   const setOffset = useCallback((offset: number) => {
     setState((current) => ({ ...current, offset: Math.max(0, offset) }));
@@ -27,7 +39,9 @@ export function usePagination({ initialLimit = 10 }: PaginationOptions = {}): Pa
     setState((current) => ({ ...current, offset: Math.max(0, page - 1) * current.limit }));
   }, []);
 
-  const setLimit = useCallback((limit: number) => setState({ offset: 0, limit }), []);
+  const setLimit = useCallback((limit: number) => {
+    if (isValidLimit(limit)) setState({ offset: 0, limit });
+  }, []);
 
   const next = useCallback(() => {
     setState((current) => ({ ...current, offset: current.offset + current.limit }));

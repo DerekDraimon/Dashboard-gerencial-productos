@@ -2,7 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import type { Product } from '../api/products-api';
 import { ProductDetail } from './ProductDetail';
 
@@ -13,6 +13,10 @@ export interface ProductDetailDrawerProps {
 
 export function ProductDetailDrawer({ product, onClose }: ProductDetailDrawerProps) {
   const titleId = useId();
+  // Keeps the last product rendered while the drawer slides out after `product` becomes null.
+  const [lastProduct, setLastProduct] = useState(product);
+  if (product && product !== lastProduct) setLastProduct(product);
+  const shown = product ?? lastProduct;
 
   return (
     <Drawer
@@ -51,7 +55,7 @@ export function ProductDetailDrawer({ product, onClose }: ProductDetailDrawerPro
         </IconButton>
       </Box>
       <Box sx={{ p: 3 }}>
-        {product && <ProductDetail key={product.id} product={product} titleId={titleId} />}
+        {shown && <ProductDetail key={shown.id} product={shown} titleId={titleId} />}
       </Box>
     </Drawer>
   );

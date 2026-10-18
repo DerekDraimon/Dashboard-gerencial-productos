@@ -53,7 +53,7 @@ beforeEach(() => {
     requestCount += 1;
     if (failing) {
       const data = {
-        error: { code: 'INTERNAL_ERROR', message: 'No se pudo cargar el inventario.' },
+        error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' },
       };
       const response = { status: 500, statusText: '', headers: {}, config, data };
       throw new AxiosError('Request failed', AxiosError.ERR_BAD_RESPONSE, config, null, response);
@@ -158,7 +158,9 @@ describe('DashboardPage', () => {
     renderPage();
 
     const retry = await screen.findByRole('button', { name: 'Reintentar' });
-    expect(screen.getByRole('alert')).toHaveTextContent('No se pudo cargar el inventario.');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Ocurrió un error en el servidor. Inténtalo de nuevo.',
+    );
     const requestsBefore = requestCount;
 
     failing = false;

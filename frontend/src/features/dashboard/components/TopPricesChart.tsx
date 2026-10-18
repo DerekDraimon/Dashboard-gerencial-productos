@@ -1,4 +1,6 @@
 import Box from '@mui/material/Box';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { formatMoney } from '../../../shared/format/money';
 import type { Product } from '../../products/api/products-api';
@@ -8,10 +10,14 @@ const TITLE = 'Top 5 productos más caros';
 const INK = '#24262B';
 const TRACK = '#ECEDE8';
 const CHART_HEIGHT = 220;
-const MAX_TITLE_LENGTH = 16;
+// Below lg the chart shares a narrow half row, so titles get a shorter axis.
+const TITLE_AXIS = {
+  narrow: { width: 120, maxLength: 16 },
+  wide: { width: 180, maxLength: 24 },
+} as const;
 
-const truncate = (title: string) =>
-  title.length > MAX_TITLE_LENGTH ? `${title.slice(0, MAX_TITLE_LENGTH - 1)}…` : title;
+const truncate = (title: string, maxLength: number) =>
+  title.length > maxLength ? `${title.slice(0, maxLength - 1)}…` : title;
 
 const axisProps = { type: 'category', axisLine: false, tickLine: false } as const;
 
@@ -21,6 +27,10 @@ export interface TopPricesChartProps {
 }
 
 export function TopPricesChart({ products, loading = false }: TopPricesChartProps) {
+  const theme = useTheme();
+  const titleAxis = useMediaQuery(theme.breakpoints.up('lg'), { noSsr: true })
+    ? TITLE_AXIS.wide
+    : TITLE_AXIS.narrow;
   const bars = products.map(({ id, title, price }) => ({
     id,
     title,
@@ -43,8 +53,8 @@ export function TopPricesChart({ products, loading = false }: TopPricesChartProp
               {...axisProps}
               yAxisId="title"
               dataKey="title"
-              width={120}
-              tickFormatter={truncate}
+              width={titleAxis.width}
+              tickFormatter={(title: string) => truncate(title, titleAxis.maxLength)}
               tick={{ fontSize: 13, fill: '#3A3D43' }}
             />
             <YAxis

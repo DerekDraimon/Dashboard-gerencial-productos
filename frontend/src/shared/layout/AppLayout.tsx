@@ -4,7 +4,7 @@ import { useTheme } from '@mui/material/styles';
 import { useState, type ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import type { UserRole } from '../auth/user-role';
-import { findNavigationItem } from './navigation';
+import { findNavigationItem, subtitleFor } from './navigation';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
@@ -36,7 +36,7 @@ export function AppLayout({ role, topbarActions }: AppLayoutProps) {
       <Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <Topbar
           title={current?.title ?? ''}
-          subtitle={current?.subtitle ?? ''}
+          subtitle={current ? subtitleFor(current, role) : ''}
           onMenuClick={isDesktop ? undefined : () => setDrawerOpen(true)}
           actions={topbarActions}
         />

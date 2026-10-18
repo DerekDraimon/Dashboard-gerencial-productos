@@ -1,9 +1,10 @@
 import axios, { isAxiosError, isCancel } from 'axios';
 import { ApiError } from './api-error';
+import { UNEXPECTED_ERROR_MESSAGE, apiErrorMessage } from './api-error-messages';
 
 const NETWORK_ERROR_MESSAGE =
   'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
-const UNEXPECTED_ERROR_MESSAGE = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+export { UNEXPECTED_ERROR_MESSAGE };
 const REQUEST_CANCELED_MESSAGE = 'La solicitud fue cancelada.';
 
 declare module 'axios' {
@@ -82,7 +83,12 @@ export function toApiError(error: unknown): ApiError {
   }
   const { status, data } = error.response;
   if (isBackendErrorBody(data)) {
-    return new ApiError(status, data.error.code, data.error.message, data.error.details);
+    return new ApiError(
+      status,
+      data.error.code,
+      apiErrorMessage(data.error.code),
+      data.error.details,
+    );
   }
   return new ApiError(status, 'HTTP_ERROR', UNEXPECTED_ERROR_MESSAGE);
 }

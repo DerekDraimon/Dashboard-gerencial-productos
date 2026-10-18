@@ -1,11 +1,15 @@
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TOKEN_KEY } from '../features/auth/session/token-storage';
 import { httpClient } from '../shared/api/http-client';
 import { NAVIGATION_ITEMS } from '../shared/layout/navigation';
 import { AppProviders } from './providers';
 import { routes } from './routes';
+import { preloadPages } from '../test/preload-pages';
+
+beforeAll(preloadPages);
 
 function setViewport(isDesktop: boolean) {
   vi.stubGlobal('matchMedia', (query: string): MediaQueryList => ({
@@ -52,15 +56,17 @@ function renderAt(path: string) {
 }
 
 const admin = { id: 'a1', email: 'ana@example.com', name: 'Ana', role: 'ADMIN', active: true };
+let me: Omit<typeof admin, 'role'> & { role: string };
 
 beforeEach(() => {
-  localStorage.setItem('dashboard-gerencial.token', 'stored-token');
+  me = admin;
+  localStorage.setItem(TOKEN_KEY, 'stored-token');
   httpClient.defaults.adapter = async (config) => ({
     status: 200,
     statusText: '',
     headers: {},
     config,
-    data: config.url === '/auth/me' ? admin : { data: [], meta: { total: 0 } },
+    data: config.url === '/auth/me' ? me : { data: [], meta: { total: 0 } },
   });
 });
 
@@ -100,6 +106,16 @@ describe('app routes', () => {
       'page',
     );
     expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('tells a USER that the inventory is read only in its subtitle', async () => {
+    setViewport(true);
+    me = { ...admin, role: 'USER' };
+    renderAt('/inventory');
+
+    expect(await screen.findByRole('heading', { name: 'Inventario' })).toBeInTheDocument();
+    expect(await screen.findByText('Consulta los productos de la tienda')).toBeInTheDocument();
+    expect(screen.queryByText('Gestiona los productos de la tienda')).not.toBeInTheDocument();
   });
 
   it('shows the not found page with a link back to the dashboard', async () => {

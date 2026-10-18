@@ -41,9 +41,11 @@ describe('httpClient', () => {
     expect(response.data).toEqual({ items: [{ id: '1' }] });
   });
 
-  it('maps the backend error body to an ApiError with its code and details', async () => {
-    const details = [{ path: 'price', message: 'Debe ser positivo' }];
-    const body = { error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details } };
+  it('maps the backend error body to an ApiError with its code, details and Spanish text', async () => {
+    const details = [{ path: 'price', message: 'price must be positive' }];
+    const body = {
+      error: { code: 'VALIDATION_ERROR', message: 'Request validation failed', details },
+    };
 
     const error = await captureError(
       httpClient.post('/products', {}, { adapter: respondWith(400, body) }),
@@ -53,8 +55,41 @@ describe('httpClient', () => {
     expect(error).toMatchObject({
       status: 400,
       code: 'VALIDATION_ERROR',
-      message: 'Datos inválidos',
+      message: 'Algunos datos no son válidos. Revisa el formulario.',
       details,
+    });
+  });
+
+  it('never shows the English server message: known codes get Spanish text', async () => {
+    const body = {
+      error: {
+        code: 'DATABASE_UNAVAILABLE',
+        message: 'The database is temporarily unavailable, please retry later',
+      },
+    };
+
+    const error = await captureError(
+      httpClient.get('/products', { adapter: respondWith(503, body) }),
+    );
+
+    expect(error).toMatchObject({
+      status: 503,
+      code: 'DATABASE_UNAVAILABLE',
+      message: 'La base de datos no está disponible en este momento. Inténtalo de nuevo más tarde.',
+    });
+  });
+
+  it('falls back to a generic Spanish message for an unknown code', async () => {
+    const body = { error: { code: 'SOMETHING_NEW', message: 'Something new went wrong' } };
+
+    const error = await captureError(
+      httpClient.get('/products', { adapter: respondWith(418, body) }),
+    );
+
+    expect(error).toMatchObject({
+      status: 418,
+      code: 'SOMETHING_NEW',
+      message: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
     });
   });
 

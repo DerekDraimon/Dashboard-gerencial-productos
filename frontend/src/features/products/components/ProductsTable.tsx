@@ -97,7 +97,7 @@ export function ProductsTable({
       rows={rows}
       loading={loading}
       emptyMessage={emptyMessage}
-      minWidth={760}
+      minWidth={680}
       footer={
         <TablePaginationFooter
           offset={pagination.offset}

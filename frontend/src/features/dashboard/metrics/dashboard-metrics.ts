@@ -85,9 +85,18 @@ export function topExpensive(products: readonly Product[], size = TOP_SIZE): Pro
   return [...products].sort((a, b) => b.price - a.price || byName(a.title, b.title)).slice(0, size);
 }
 
+function creationTime(product: Product): number {
+  const time = Date.parse(product.creationAt);
+  return Number.isNaN(time) ? Number.NEGATIVE_INFINITY : time;
+}
+
 export function latestCreated(products: readonly Product[], size = TOP_SIZE): Product[] {
   return [...products]
-    .sort((a, b) => Date.parse(b.creationAt) - Date.parse(a.creationAt) || a.id.localeCompare(b.id))
+    .map((product) => ({ product, time: creationTime(product) }))
+    .sort((a, b) =>
+      a.time === b.time ? a.product.id.localeCompare(b.product.id) : b.time > a.time ? 1 : -1,
+    )
+    .map(({ product }) => product)
     .slice(0, size);
 }
 

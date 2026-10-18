@@ -21,6 +21,25 @@ const product: Product = {
 const pagination = { offset: 0, limit: 10 } as Pagination;
 
 describe('ProductsTable', () => {
+  // 1024 px viewport - 248 px sidebar - 2 x 32 px page padding - scrollbar leaves ~695 px.
+  it('fits a 1024 px viewport and only scrolls inside its box when narrower', () => {
+    render(
+      <ProductsTable
+        rows={[product]}
+        total={1}
+        loading={false}
+        pagination={pagination}
+        emptyMessage="Vacío"
+        renderActions={() => null}
+      />,
+    );
+
+    expect(screen.getByRole('region', { name: 'Productos' })).toHaveStyle({ overflowX: 'auto' });
+    const minWidth = parseFloat(getComputedStyle(screen.getByRole('table')).minWidth);
+    expect(minWidth).toBeGreaterThan(0);
+    expect(minWidth).toBeLessThanOrEqual(690);
+  });
+
   it('renders every column with formatted values and the given actions', () => {
     render(
       <ProductsTable

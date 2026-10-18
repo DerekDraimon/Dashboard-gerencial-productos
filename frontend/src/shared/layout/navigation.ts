@@ -2,7 +2,7 @@ import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined';
 import type { SvgIconComponent } from '@mui/icons-material';
-import type { UserRole } from '../auth/user-role';
+import { canAccess, type UserRole } from '../auth/user-role';
 
 export type NavigationId = 'dashboard' | 'inventory' | 'users';
 
@@ -12,6 +12,8 @@ export interface NavigationItem {
   label: string;
   title: string;
   subtitle: string;
+  /** Overrides `subtitle` for roles that see the page differently (e.g. read only). */
+  roleSubtitles?: Partial<Record<UserRole, string>>;
   Icon: SvgIconComponent;
   roles?: readonly UserRole[];
 }
@@ -33,6 +35,7 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     label: 'Inventario',
     title: 'Inventario',
     subtitle: 'Gestiona los productos de la tienda',
+    roleSubtitles: { USER: 'Consulta los productos de la tienda' },
     Icon: Inventory2Outlined,
   },
   {
@@ -47,7 +50,11 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
 ];
 
 export function canOpen(item: NavigationItem, role: UserRole | undefined): boolean {
-  return !item.roles || (role !== undefined && item.roles.includes(role));
+  return canAccess(role, item.roles);
+}
+
+export function subtitleFor(item: NavigationItem, role: UserRole | undefined): string {
+  return (role && item.roleSubtitles?.[role]) ?? item.subtitle;
 }
 
 export function findNavigationItem(pathname: string): NavigationItem | undefined {

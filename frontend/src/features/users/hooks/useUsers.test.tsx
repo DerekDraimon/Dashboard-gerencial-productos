@@ -211,6 +211,21 @@ describe('useUsers', () => {
     expect(lastParams()).toEqual({ offset: 10, limit: 10 });
   });
 
+  it('moves between pages from the clamped page after the list shrinks', async () => {
+    const { result } = await renderLoaded();
+    act(() => result.current.pagination.setOffset(20));
+    await waitFor(() => expect(result.current.rows[0]?.id).toBe('u20'));
+    directory = directory.slice(0, 12);
+    act(() => result.current.refresh());
+    await waitFor(() => expect(result.current.rows.map((row) => row.id)).toEqual(['u10', 'u11']));
+
+    act(() => result.current.pagination.previous());
+
+    await waitFor(() => expect(result.current.rows[0]?.id).toBe('u0'));
+    expect(result.current.pagination).toMatchObject({ offset: 0, page: 1 });
+    expect(lastParams()).toEqual({ offset: 0, limit: 10 });
+  });
+
   it('exposes the error and loads again on reload', async () => {
     failing = true;
     const { result } = renderHook(() => useUsers());

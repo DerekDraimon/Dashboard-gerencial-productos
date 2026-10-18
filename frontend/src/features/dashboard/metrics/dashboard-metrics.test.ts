@@ -186,6 +186,19 @@ describe('latestCreated', () => {
       'Febrero',
     ]);
   });
+
+  it('sorts invalid creation dates last, ordered by id, whatever the input order', () => {
+    const products = [
+      product({ id: '0x', title: 'Inválida X', creationAt: 'not-a-date' }),
+      product({ id: 'a', title: 'Enero', creationAt: '2025-01-10T00:00:00.000Z' }),
+      product({ id: '0w', title: 'Inválida W', creationAt: '' }),
+      product({ id: 'b', title: 'Junio', creationAt: '2025-06-01T00:00:00.000Z' }),
+    ];
+    const expected = ['Junio', 'Enero', 'Inválida W', 'Inválida X'];
+
+    expect(titles(latestCreated(products))).toEqual(expected);
+    expect(titles(latestCreated([...products].reverse()))).toEqual(expected);
+  });
 });
 
 describe('computeDashboardMetrics', () => {

@@ -31,7 +31,14 @@ export function KpiCard({ title, value, detail, icon, tone, loading = false }: K
       role="group"
       aria-labelledby={titleId}
       aria-busy={loading}
-      sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0 }}
+      sx={{
+        p: 2.5,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.5,
+        minWidth: 0,
+        containerType: 'inline-size',
+      }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
         <Typography
@@ -67,10 +74,13 @@ export function KpiCard({ title, value, detail, icon, tone, loading = false }: K
         <>
           <Typography
             sx={{
-              fontSize: 32,
+              // Scales with the card (cqi) so "US$ 1.644,25" never breaks at the comma.
+              fontSize: 'clamp(20px, 11cqi, 32px)',
               fontWeight: 700,
               letterSpacing: '-0.5px',
-              overflowWrap: 'anywhere',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
           >
             {value}

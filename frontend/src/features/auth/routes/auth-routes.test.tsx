@@ -3,13 +3,16 @@ import userEvent from '@testing-library/user-event';
 import type { AxiosAdapter } from 'axios';
 import { AxiosError } from 'axios';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppProviders } from '../../../app/providers';
 import { routes } from '../../../app/routes';
 import { httpClient } from '../../../shared/api/http-client';
 import type { AuthUser } from '../api/auth-api';
+import { TOKEN_KEY } from '../session/token-storage';
+import { preloadPages } from '../../../test/preload-pages';
 
-const TOKEN_KEY = 'dashboard-gerencial.token';
+beforeAll(preloadPages);
+
 const admin: AuthUser = {
   id: 'a1',
   email: 'ana@example.com',
