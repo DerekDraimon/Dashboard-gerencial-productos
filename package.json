@@ -21,7 +21,7 @@
     "format": "prettier --write ."
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",
