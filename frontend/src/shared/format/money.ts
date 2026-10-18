@@ -6,6 +6,8 @@ export type MoneyValue = number | string | Decimal;
 const pesos = new Intl.NumberFormat('es-CO', {
   style: 'currency',
   currency: 'COP',
+  // Both bounds: engines that default COP to 2 minimum digits throw a RangeError on max < min.
+  minimumFractionDigits: 0,
   maximumFractionDigits: 0,
 });
 const pesosWithCents = new Intl.NumberFormat('es-CO', {
