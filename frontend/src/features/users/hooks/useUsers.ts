@@ -39,6 +39,11 @@ export function useUsers() {
   const offset = knownTotal === null ? requestedOffset : Math.min(requestedOffset, lastOffset);
   const requestKey = JSON.stringify([status, offset, limit, attempt]);
 
+  // Commit the clamped page so the list growing again does not jump back to the old one.
+  useEffect(() => {
+    if (offset !== requestedOffset) setOffset(offset);
+  }, [offset, requestedOffset, setOffset]);
+
   useEffect(() => {
     const controller = new AbortController();
     listUsers({ offset, limit, active: ACTIVE_PARAM[status] }, { signal: controller.signal }).then(

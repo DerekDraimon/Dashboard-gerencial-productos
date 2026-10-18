@@ -2,10 +2,6 @@
 
 Aplicación fullstack para gestionar el inventario de productos de una tienda. Incluye un dashboard gerencial con métricas de negocio (valor del inventario, categoría líder, distribución por categoría, productos más caros y más recientes), autenticación con JWT y roles (`ADMIN` y `USER`) y administración de usuarios.
 
-## Capturas
-
-<!-- Agregar capturas: docs/screenshots/dashboard.png, inventario.png, login.png -->
-
 ## Stack
 
 | Capa           | Tecnologías                                                                               |
@@ -89,7 +85,7 @@ Se leen de `backend/.env` (plantilla en `backend/.env.example`). Se validan al a
 | `SEED_USER_PASSWORD`         | Solo seed   | —                       | Contraseña del usuario `USER` del seed (mínimo 8 caracteres)                                                                       |
 | `TRUST_PROXY`                | No          | sin definir             | `true`, `false`, número de saltos (`1`) o lista de direcciones o subredes separadas por comas (`loopback, 10.0.0.0/8`). Ver abajo. |
 
-`TRUST_PROXY` solo hace falta si la API corre detrás de un proxy inverso: así `req.ip` y el límite de intentos de login usan la IP real de `X-Forwarded-For`. Un valor inválido detiene el arranque. Prefiere un número de saltos (`TRUST_PROXY=1`) o una lista de subredes, y **nunca uses `true` en producción**: confiaría en cualquier `X-Forwarded-For` y un cliente podría falsear su IP para esquivar el límite.
+`TRUST_PROXY` solo hace falta si la API corre detrás de un proxy inverso: así `req.ip` y el límite de intentos de login usan la IP real de `X-Forwarded-For`. Vacío equivale a no definirla; un valor inválido detiene el arranque. Prefiere un número de saltos (`TRUST_PROXY=1`) o una lista de subredes, y **nunca uses `true` en producción**: confiaría en cualquier `X-Forwarded-For` y un cliente podría falsear su IP para esquivar el límite.
 
 ### Frontend
 

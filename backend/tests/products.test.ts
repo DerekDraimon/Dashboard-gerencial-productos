@@ -447,6 +447,31 @@ describe('products module', () => {
     });
   });
 
+  describe('response shape', () => {
+    it('never exposes _id or __v in list, detail or update responses', async () => {
+      const created = await createProduct();
+      const expectedKeys = [
+        'category',
+        'creationAt',
+        'description',
+        'id',
+        'images',
+        'price',
+        'stock',
+        'title',
+        'updatedAt',
+      ];
+
+      const list = await user().get('/api/products');
+      const detail = await user().get(`/api/products/${created.id}`);
+      const updated = await admin().patch(`/api/products/${created.id}`).send({ stock: 3 });
+
+      expect(Object.keys(list.body.data[0]).sort()).toEqual(expectedKeys);
+      expect(Object.keys(detail.body).sort()).toEqual(expectedKeys);
+      expect(Object.keys(updated.body).sort()).toEqual(expectedKeys);
+    });
+  });
+
   describe('DELETE /api/products/:id', () => {
     it('deletes the product (204) and a second delete answers 404', async () => {
       const created = await createProduct();

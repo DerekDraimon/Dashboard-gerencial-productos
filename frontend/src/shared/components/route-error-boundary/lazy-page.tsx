@@ -4,15 +4,16 @@ import { RouteErrorBoundary } from './RouteErrorBoundary';
 
 export function lazyPage(load: () => Promise<ComponentType>): ComponentType {
   const createPage = () => lazy(() => load().then((Page) => ({ default: Page })));
-  // React.lazy caches a rejected import forever, so a retry needs a fresh lazy component.
-  let Page = createPage();
+  // Shared so a loaded page is not imported again on every mount.
+  let sharedPage = createPage();
 
   return function LazyPage() {
-    const [, setAttempt] = useState(0);
+    const [Page, setPage] = useState(() => sharedPage);
 
+    // React.lazy caches a rejected import forever, so a retry needs a fresh lazy component.
     const retry = () => {
-      Page = createPage();
-      setAttempt((attempt) => attempt + 1);
+      sharedPage = createPage();
+      setPage(() => sharedPage);
     };
 
     return (
