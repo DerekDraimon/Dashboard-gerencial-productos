@@ -255,7 +255,7 @@ describe('ProductFormDialog', () => {
       await userEvent.type(field('Categoría'), 'Hogar');
 
       expect(within(preview()).getByRole('heading', { name: 'Lámpara' })).toBeInTheDocument();
-      expect(preview()).toHaveTextContent(/US\$\s15,00/);
+      expect(preview()).toHaveTextContent(/\$\s15(?![\d,])/);
       expect(within(preview()).getByText('Hogar')).toBeInTheDocument();
       expect(within(preview()).getAllByText('Al guardar')).toHaveLength(2);
     });
@@ -265,7 +265,7 @@ describe('ProductFormDialog', () => {
 
       await userEvent.type(field('Precio'), '24,99');
 
-      expect(preview()).toHaveTextContent(/US\$\s24,99/);
+      expect(preview()).toHaveTextContent(/\$\s24,99/);
     });
 
     it('shows an added url in the list and in the preview', async () => {

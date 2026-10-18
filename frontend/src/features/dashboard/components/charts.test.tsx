@@ -87,11 +87,11 @@ describe('TopPricesChart', () => {
       'Silla',
       'Lámpara',
       'Taza',
-      `US$${NBSP}1.329,99`,
-      `US$${NBSP}450,00`,
-      `US$${NBSP}120,50`,
-      `US$${NBSP}80,00`,
-      `US$${NBSP}5,00`,
+      `$${NBSP}1.329,99`,
+      `$${NBSP}450`,
+      `$${NBSP}120,50`,
+      `$${NBSP}80`,
+      `$${NBSP}5`,
     ]);
   });
 
@@ -128,7 +128,7 @@ describe('TopPricesChart', () => {
 
     expect(
       screen.getByRole('img', {
-        name: `Top 5 productos más caros: Sofá US$${NBSP}1.329,99, Mesa US$${NBSP}450,00`,
+        name: `Top 5 productos más caros: Sofá $${NBSP}1.329,99, Mesa $${NBSP}450`,
       }),
     ).toBeInTheDocument();
   });
