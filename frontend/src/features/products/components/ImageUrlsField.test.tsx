@@ -77,6 +77,21 @@ describe('ImageUrlsField', () => {
     expect(rows()[0]).toHaveTextContent('https://example.com/b.png');
   });
 
+  it('keeps a long url inside the list width with an ellipsis', () => {
+    const url = `https://example.com/${'long-segment-'.repeat(20)}photo.png`;
+    render(<Harness initial={[url]} />);
+
+    // jsdom has no layout: the column must not grow past the list, and the text must truncate.
+    expect(screen.getByRole('list', { name: 'Imágenes agregadas' })).toHaveStyle({
+      gridTemplateColumns: 'minmax(0, 1fr)',
+    });
+    expect(screen.getByTitle(url)).toHaveStyle({
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+    });
+  });
+
   it('marks each url as OK or No carga from its image events', () => {
     const { container } = render(
       <Harness initial={['https://example.com/a.png', 'https://example.com/rota.png']} />,

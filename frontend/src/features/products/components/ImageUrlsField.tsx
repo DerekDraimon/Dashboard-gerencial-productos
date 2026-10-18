@@ -112,7 +112,17 @@ export function ImageUrlsField({ value, onChange, error }: ImageUrlsFieldProps) 
       <Box
         component="ul"
         aria-label="Imágenes agregadas"
-        sx={{ listStyle: 'none', m: 0, mt: 0.75, p: 0, display: 'grid', gap: 0.75, fontSize: 13 }}
+        sx={{
+          listStyle: 'none',
+          m: 0,
+          mt: 0.75,
+          p: 0,
+          display: 'grid',
+          // The implicit `auto` column grows to the full url width, so the ellipsis would never apply.
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          gap: 0.75,
+          fontSize: 13,
+        }}
       >
         {value.map((url, index) => {
           const status = STATUS_STYLES[statuses[url] ?? 'loading'];
