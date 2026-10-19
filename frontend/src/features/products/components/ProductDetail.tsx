@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
+import Stack from '@mui/material/Stack';
 import { useState } from 'react';
 import { StatusChip } from '../../../shared/components/status-chip';
 import { formatDate } from '../../../shared/format/date';
@@ -33,7 +34,7 @@ export function ProductDetail({ product, compact = false, titleId }: ProductDeta
   ];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: compact ? 1.5 : 2.5 }}>
+    <Stack spacing={compact ? 1.5 : 2.5}>
       <ProductImage
         src={images[current]}
         alt={product.title}
@@ -63,7 +64,7 @@ export function ProductDetail({ product, compact = false, titleId }: ProductDeta
           ))}
         </Box>
       )}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, alignItems: 'flex-start' }}>
+      <Stack spacing={1.25} sx={{ alignItems: 'flex-start' }}>
         <StatusChip label={product.category} variant="neutral" />
         <Typography
           id={titleId}
@@ -76,11 +77,11 @@ export function ProductDetail({ product, compact = false, titleId }: ProductDeta
           {formatMoney(product.price)}
         </Typography>
         <Typography
-          sx={{ fontSize: 14, lineHeight: 1.6, color: '#3A3D43', whiteSpace: 'pre-line' }}
+          sx={{ fontSize: 14, lineHeight: 1.6, color: 'text.soft', whiteSpace: 'pre-line' }}
         >
           {product.description}
         </Typography>
-      </Box>
+      </Stack>
       <Box
         component="dl"
         sx={{
@@ -90,7 +91,7 @@ export function ProductDetail({ product, compact = false, titleId }: ProductDeta
           gap: 1.5,
           p: 2,
           borderRadius: '12px',
-          bgcolor: '#F5F6F3',
+          bgcolor: 'background.default',
           fontSize: 13,
         }}
       >
@@ -105,6 +106,6 @@ export function ProductDetail({ product, compact = false, titleId }: ProductDeta
           </div>
         ))}
       </Box>
-    </Box>
+    </Stack>
   );
 }

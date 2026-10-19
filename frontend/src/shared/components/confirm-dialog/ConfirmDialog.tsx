@@ -5,6 +5,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import Stack from '@mui/material/Stack';
 import { useId, type ReactNode } from 'react';
 
 export type ConfirmDialogVariant = 'default' | 'danger';
@@ -23,8 +24,8 @@ export interface ConfirmDialogProps {
 }
 
 const iconColors: Record<ConfirmDialogVariant, { bgcolor: string; color: string }> = {
-  default: { bgcolor: '#E6EDE6', color: 'text.primary' },
-  danger: { bgcolor: '#F8E9E6', color: 'error.main' },
+  default: { bgcolor: 'tint.sage', color: 'text.primary' },
+  danger: { bgcolor: 'tint.danger', color: 'error.main' },
 };
 
 export function ConfirmDialog({
@@ -72,16 +73,16 @@ export function ConfirmDialog({
       >
         {icon}
       </Box>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Stack spacing={1}>
         <DialogTitle sx={{ p: 0, fontSize: 20, fontWeight: 700 }}>{title}</DialogTitle>
         <DialogContentText
           id={messageId}
           component="div"
-          sx={{ fontSize: 14, lineHeight: 1.55, color: '#3A3D43' }}
+          sx={{ fontSize: 14, lineHeight: 1.55, color: 'text.soft' }}
         >
           {message}
         </DialogContentText>
-      </Box>
+      </Stack>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1 }}>
         <Button
           variant="outlined"

@@ -5,6 +5,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
+import Stack from '@mui/material/Stack';
 import { useEffect, useState } from 'react';
 import { Controller, useForm, type FieldPath } from 'react-hook-form';
 import { ApiError } from '../../../shared/api/api-error';
@@ -204,7 +205,7 @@ export function UserFormDialog(props: UserFormDialogProps) {
           <LoadingState label="Cargando usuario…" />
         ))}
       {ready && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
+        <Stack spacing={2.25} sx={{ pt: 1 }}>
           <TextField label="Nombre" autoComplete="off" {...textField('name', validateName)} />
           {creating && (
             <>
@@ -265,7 +266,7 @@ export function UserFormDialog(props: UserFormDialogProps) {
               )}
             />
           </Box>
-        </Box>
+        </Stack>
       )}
     </FormDialog>
   );

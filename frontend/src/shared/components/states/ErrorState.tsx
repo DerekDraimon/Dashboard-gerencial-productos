@@ -40,7 +40,7 @@ export function ErrorState({
     <StateLayout
       role="alert"
       icon={<ErrorOutlineOutlined />}
-      iconColors={{ bgcolor: '#F8E9E6', color: 'error.main' }}
+      iconColors={{ bgcolor: 'tint.danger', color: 'error.main' }}
       title={title}
       description={message}
       action={

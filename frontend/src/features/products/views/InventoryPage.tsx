@@ -7,6 +7,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import Stack from '@mui/material/Stack';
 import { useState } from 'react';
 import { ErrorState } from '../../../shared/components/states';
 import { useAuth } from '../../auth/context/use-auth';
@@ -69,7 +70,7 @@ export function InventoryPage() {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+    <Stack spacing={2.5}>
       {isAdmin && (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           {isPhone ? (
@@ -146,6 +147,6 @@ export function InventoryPage() {
           />
         </>
       )}
-    </Box>
+    </Stack>
   );
 }

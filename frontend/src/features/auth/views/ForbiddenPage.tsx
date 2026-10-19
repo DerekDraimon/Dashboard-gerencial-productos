@@ -23,7 +23,7 @@ export function ForbiddenPage() {
           width: 48,
           height: 48,
           borderRadius: '50%',
-          bgcolor: '#F8E9E6',
+          bgcolor: 'tint.danger',
           color: 'error.main',
           display: 'grid',
           placeItems: 'center',

@@ -15,12 +15,10 @@ export interface KpiCardProps {
   loading?: boolean;
 }
 
-const INK = '#24262B';
-
 const toneColors: Record<KpiTone, { bgcolor: string; color: string }> = {
-  ochre: { bgcolor: '#D9A62E', color: INK },
-  ink: { bgcolor: INK, color: '#F5F6F3' },
-  sage: { bgcolor: '#9DB59F', color: INK },
+  ochre: { bgcolor: 'primary.main', color: 'text.primary' },
+  ink: { bgcolor: 'ink.main', color: 'inverse.text' },
+  sage: { bgcolor: 'secondary.main', color: 'text.primary' },
 };
 
 export function KpiCard({ title, value, detail, icon, tone, loading = false }: KpiCardProps) {

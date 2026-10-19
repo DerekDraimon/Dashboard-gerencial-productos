@@ -7,13 +7,11 @@ export interface StatusChipProps {
   variant?: StatusChipVariant;
 }
 
-const INK = '#24262B';
-
 const variantColors: Record<StatusChipVariant, { bgcolor: string; color: string }> = {
-  neutral: { bgcolor: '#E6EDE6', color: INK },
-  strong: { bgcolor: INK, color: '#F5F6F3' },
-  success: { bgcolor: '#9DB59F', color: INK },
-  muted: { bgcolor: '#E4E5E0', color: INK },
+  neutral: { bgcolor: 'tint.sage', color: 'text.primary' },
+  strong: { bgcolor: 'ink.main', color: 'inverse.text' },
+  success: { bgcolor: 'secondary.main', color: 'text.primary' },
+  muted: { bgcolor: 'divider', color: 'text.primary' },
 };
 
 export function StatusChip({ label, variant = 'neutral' }: StatusChipProps) {

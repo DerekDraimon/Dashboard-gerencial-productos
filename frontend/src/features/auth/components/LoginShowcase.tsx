@@ -3,13 +3,8 @@ import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined';
 import EmojiEventsOutlined from '@mui/icons-material/EmojiEventsOutlined';
 import ShowChartRounded from '@mui/icons-material/ShowChartRounded';
 import Box from '@mui/material/Box';
+import { alpha, useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-
-const LIGHT = '#F5F6F3';
-const MUTED_TEXT = '#C9CBCF';
-const SAGE = '#9DB59F';
-const OCHRE = '#D9A62E';
-const GREY = '#5C5F66';
 
 const HIGHLIGHTS = [
   { label: 'Valor del inventario exacto', Icon: AttachMoneyRounded },
@@ -19,11 +14,11 @@ const HIGHLIGHTS = [
 ];
 
 const CIRCLES = [
-  { size: 420, bgcolor: OCHRE, right: -150, bottom: -170 },
-  { size: 300, bgcolor: SAGE, right: 150, bottom: -210, opacity: 0.9 },
-  { size: 230, border: '18px solid #3A3D43', right: -60, top: -70 },
-  { size: 22, bgcolor: OCHRE, right: 210, top: 120 },
-  { size: 12, bgcolor: SAGE, right: 120, top: 230 },
+  { size: 420, bgcolor: 'primary.main', right: -150, bottom: -170 },
+  { size: 300, bgcolor: 'secondary.main', right: 150, bottom: -210, opacity: 0.9 },
+  { size: 230, border: '18px solid', borderColor: 'text.soft', right: -60, top: -70 },
+  { size: 22, bgcolor: 'primary.main', right: 210, top: 120 },
+  { size: 12, bgcolor: 'secondary.main', right: 120, top: 230 },
 ];
 
 const DOT_GRID = Array.from({ length: 20 }, (_, index) => ({
@@ -32,6 +27,7 @@ const DOT_GRID = Array.from({ length: 20 }, (_, index) => ({
 }));
 
 function Shapes() {
+  const { palette } = useTheme();
   return (
     <Box
       aria-hidden="true"
@@ -57,14 +53,29 @@ function Shapes() {
         fill="none"
         sx={{ position: 'absolute', width: 220, height: 220, right: 60, top: 300 }}
       >
-        <path d="M30 110a80 80 0 0 1 80-80" stroke={SAGE} strokeWidth="10" strokeLinecap="round" />
-        <path d="M60 110a50 50 0 0 1 50-50" stroke={OCHRE} strokeWidth="10" strokeLinecap="round" />
-        <path d="M190 110a80 80 0 0 1-80 80" stroke={GREY} strokeWidth="6" strokeLinecap="round" />
+        <path
+          d="M30 110a80 80 0 0 1 80-80"
+          stroke={palette.secondary.main}
+          strokeWidth="10"
+          strokeLinecap="round"
+        />
+        <path
+          d="M60 110a50 50 0 0 1 50-50"
+          stroke={palette.primary.main}
+          strokeWidth="10"
+          strokeLinecap="round"
+        />
+        <path
+          d="M190 110a80 80 0 0 1-80 80"
+          stroke={palette.text.secondary}
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
       </Box>
       <Box
         component="svg"
         viewBox="0 0 120 84"
-        fill={GREY}
+        fill={palette.text.secondary}
         sx={{ position: 'absolute', width: 120, height: 84, left: 48, bottom: 150 }}
       >
         {DOT_GRID.map(({ cx, cy }) => (
@@ -109,7 +120,7 @@ export function LoginShowcase({ compact }: LoginShowcaseProps) {
         position: 'relative',
         overflow: 'hidden',
         bgcolor: 'ink.main',
-        color: LIGHT,
+        color: 'inverse.text',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -134,7 +145,7 @@ export function LoginShowcase({ compact }: LoginShowcaseProps) {
           Tu inventario, en orden y a la vista.
         </Typography>
         {!compact && (
-          <Typography sx={{ fontSize: 15, lineHeight: 1.6, color: MUTED_TEXT }}>
+          <Typography sx={{ fontSize: 15, lineHeight: 1.6, color: 'inverse.subtle' }}>
             Consulta el valor del inventario, la categoría líder y los productos más recientes desde
             un solo panel.
           </Typography>
@@ -166,11 +177,11 @@ export function LoginShowcase({ compact }: LoginShowcaseProps) {
                 px: 1.75,
                 py: 1,
                 borderRadius: 999,
-                bgcolor: LIGHT,
+                bgcolor: 'background.default',
                 color: 'ink.main',
                 fontSize: 13,
                 fontWeight: 600,
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
+                boxShadow: (theme) => `0 2px 8px ${alpha(theme.palette.common.black, 0.25)}`,
               }}
             >
               <Icon aria-hidden="true" sx={{ fontSize: 16 }} />

@@ -1,5 +1,6 @@
 import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
 import Box from '@mui/material/Box';
+import { alpha } from '@mui/material/styles';
 import { useWatch, type Control } from 'react-hook-form';
 import type { ProductFormValues } from './ProductFormDialog';
 import { ProductDetail } from './ProductDetail';
@@ -26,7 +27,7 @@ export function ProductFormPreview({ control }: ProductFormPreviewProps) {
           borderRadius: '16px',
           overflow: 'hidden',
           bgcolor: 'background.paper',
-          boxShadow: '0 6px 18px rgba(36, 38, 43, 0.12)',
+          boxShadow: (theme) => `0 6px 18px ${alpha(theme.palette.ink.main, 0.12)}`,
         }}
       >
         <Box
@@ -37,7 +38,7 @@ export function ProductFormPreview({ control }: ProductFormPreviewProps) {
             px: 1.75,
             py: 1.25,
             bgcolor: 'text.primary',
-            color: '#F5F6F3',
+            color: 'inverse.text',
             fontSize: 12,
             fontWeight: 600,
           }}

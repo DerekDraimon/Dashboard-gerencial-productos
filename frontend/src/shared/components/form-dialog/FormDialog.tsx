@@ -10,6 +10,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import Stack from '@mui/material/Stack';
 import type { FormEvent, ReactNode } from 'react';
 
 export interface FormDialogProps {
@@ -78,12 +79,12 @@ export function FormDialog({
             borderColor: 'divider',
           }}
         >
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Stack spacing={0.5}>
             <DialogTitle sx={{ p: 0, fontSize: 20, fontWeight: 700 }}>{title}</DialogTitle>
             {subtitle && (
               <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{subtitle}</Typography>
             )}
-          </Box>
+          </Stack>
           <IconButton aria-label="Cerrar" onClick={handleClose} disabled={submitting}>
             <CloseIcon fontSize="small" />
           </IconButton>

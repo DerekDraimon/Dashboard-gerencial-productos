@@ -7,8 +7,6 @@ import type { Product } from '../../products/api/products-api';
 import { ChartCard } from './ChartCard';
 
 const TITLE = 'Top 5 productos más caros';
-const INK = '#24262B';
-const TRACK = '#ECEDE8';
 const CHART_HEIGHT = 220;
 // Below lg the chart shares a narrow half row, so titles get a shorter axis.
 const TITLE_AXIS = {
@@ -55,7 +53,7 @@ export function TopPricesChart({ products, loading = false }: TopPricesChartProp
               dataKey="title"
               width={titleAxis.width}
               tickFormatter={(title: string) => truncate(title, titleAxis.maxLength)}
-              tick={{ fontSize: 13, fill: '#3A3D43' }}
+              tick={{ fontSize: 13, fill: theme.palette.text.soft }}
             />
             <YAxis
               {...axisProps}
@@ -63,15 +61,15 @@ export function TopPricesChart({ products, loading = false }: TopPricesChartProp
               dataKey="priceLabel"
               orientation="right"
               width={100}
-              tick={{ fontSize: 13, fontWeight: 600, fill: INK }}
+              tick={{ fontSize: 13, fontWeight: 600, fill: theme.palette.ink.main }}
             />
             <Bar
               yAxisId="title"
               dataKey="price"
-              fill={INK}
+              fill={theme.palette.ink.main}
               barSize={14}
               radius={7}
-              background={{ fill: TRACK, radius: 7 }}
+              background={{ fill: theme.palette.surface.track, radius: 7 }}
               isAnimationActive={false}
             />
           </BarChart>

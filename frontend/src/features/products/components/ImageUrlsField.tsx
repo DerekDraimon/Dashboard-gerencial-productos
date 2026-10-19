@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import FormHelperText from '@mui/material/FormHelperText';
 import IconButton from '@mui/material/IconButton';
 import OutlinedInput from '@mui/material/OutlinedInput';
+import Stack from '@mui/material/Stack';
 import { useId, useState, type KeyboardEvent } from 'react';
 
 export const MAX_IMAGES = 10;
@@ -19,18 +20,18 @@ type ImageStatus = 'loading' | 'ok' | 'error';
 const STATUS_STYLES: Record<ImageStatus, { label: string; chip: object; row: object }> = {
   loading: {
     label: 'Cargando…',
-    chip: { bgcolor: '#E4E5E0', color: 'text.primary' },
-    row: { bgcolor: '#F5F6F3', color: '#3A3D43' },
+    chip: { bgcolor: 'divider', color: 'text.primary' },
+    row: { bgcolor: 'background.default', color: 'text.soft' },
   },
   ok: {
     label: 'OK',
-    chip: { bgcolor: '#9DB59F', color: 'text.primary' },
-    row: { bgcolor: '#F5F6F3', color: '#3A3D43' },
+    chip: { bgcolor: 'secondary.main', color: 'text.primary' },
+    row: { bgcolor: 'background.default', color: 'text.soft' },
   },
   error: {
     label: 'No carga',
-    chip: { bgcolor: '#FFFFFF', color: '#7E2A20' },
-    row: { bgcolor: '#F8E9E6', color: '#7E2A20' },
+    chip: { bgcolor: 'background.paper', color: 'error.dark' },
+    row: { bgcolor: 'tint.danger', color: 'error.dark' },
   },
 };
 
@@ -77,7 +78,7 @@ export function ImageUrlsField({ value, onChange, error }: ImageUrlsFieldProps) 
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+    <Stack spacing={0.75}>
       <Box component="label" htmlFor={id} sx={{ fontSize: 13, fontWeight: 600 }}>
         URL de imagen
       </Box>
@@ -187,6 +188,6 @@ export function ImageUrlsField({ value, onChange, error }: ImageUrlsFieldProps) 
           );
         })}
       </Box>
-    </Box>
+    </Stack>
   );
 }
