@@ -8,10 +8,6 @@ import { canOpen, NAVIGATION_ITEMS } from './navigation';
 
 export const SIDEBAR_WIDTH = 248;
 
-const SIDEBAR_TEXT = '#F5F6F3';
-const SIDEBAR_MUTED_TEXT = '#B9BBC0';
-const NAV_ITEM_TEXT = '#E4E5E0';
-
 interface SidebarProps {
   variant: 'permanent' | 'temporary';
   open: boolean;
@@ -35,7 +31,7 @@ export function Sidebar({ variant, open, onClose, role }: SidebarProps) {
           boxSizing: 'border-box',
           border: 0,
           bgcolor: 'ink.main',
-          color: SIDEBAR_TEXT,
+          color: 'inverse.text',
         },
       }}
     >
@@ -60,7 +56,7 @@ export function Sidebar({ variant, open, onClose, role }: SidebarProps) {
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             <Typography sx={{ fontWeight: 700, fontSize: 15 }}>Gerencial</Typography>
-            <Typography sx={{ fontSize: 12, color: SIDEBAR_MUTED_TEXT }}>
+            <Typography sx={{ fontSize: 12, color: 'inverse.muted' }}>
               Inventario de productos
             </Typography>
           </Box>
@@ -79,11 +75,11 @@ export function Sidebar({ variant, open, onClose, role }: SidebarProps) {
                 minHeight: 44,
                 px: 1.5,
                 borderRadius: 1,
-                color: NAV_ITEM_TEXT,
+                color: 'inverse.soft',
                 fontSize: 14,
                 fontWeight: 500,
                 textDecoration: 'none',
-                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.08)' },
+                '&:hover': { bgcolor: 'inverse.hover' },
                 '&.active': { bgcolor: 'primary.main', color: 'ink.main', fontWeight: 700 },
                 '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main' },
               }}

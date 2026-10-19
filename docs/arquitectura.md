@@ -71,6 +71,7 @@ frontend/src/
 | **Productos: borrado definitivo. Usuarios: inactivación**     | Un producto eliminado no se necesita más; un usuario se inactiva para conservar su historial y poder reactivarlo                                                                        |
 | **Errores del servidor traducidos en la UI**                  | La API responde códigos estables (`code`) y el frontend los muestra en español                                                                                                          |
 | **Páginas con carga diferida y chunks de vendor**             | Carga inicial menor; si falla la descarga de una página se muestra "Reintentar" en lugar de romper la app                                                                               |
+| **Colores solo en el tema** (`app/theme.ts`)                  | Los componentes usan tokens con nombre (`tint.danger`, `surface.track`, `inverse.text`) y layout con `Grid` y `Stack`; un test falla si aparece un color fijo fuera del tema            |
 
 ## 🧪 Pruebas
 

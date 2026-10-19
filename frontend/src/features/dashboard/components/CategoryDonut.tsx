@@ -1,18 +1,14 @@
 import Box from '@mui/material/Box';
+import { getContrastRatio, useTheme } from '@mui/material/styles';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import type { CategoryShare } from '../metrics/dashboard-metrics';
 import { ChartCard } from './ChartCard';
 
 const TITLE = 'Distribución por categoría';
-const INK = '#24262B';
-const SLICE_COLORS = [INK, '#D9A62E', '#9DB59F', '#6E7178', '#C9CCC4'] as const;
-// Light swatches need an ink outline to stay visible on the white card.
-const OUTLINED_COLORS = new Set(['#D9A62E', '#9DB59F', '#C9CCC4']);
 const DONUT_SIZE = 180;
 
 const percentFormatter = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 });
 const formatPercent = (percent: number) => `${percentFormatter.format(percent)}%`;
-const colorAt = (index: number) => SLICE_COLORS[index % SLICE_COLORS.length] ?? INK;
 
 export interface CategoryDonutProps {
   distribution: CategoryShare[];
@@ -20,6 +16,11 @@ export interface CategoryDonutProps {
 }
 
 export function CategoryDonut({ distribution, loading = false }: CategoryDonutProps) {
+  const { palette } = useTheme();
+  const colorAt = (index: number) =>
+    palette.chart[index % palette.chart.length] ?? palette.ink.main;
+  // Light swatches need an ink outline to stay visible on the card.
+  const needsOutline = (color: string) => getContrastRatio(color, palette.background.paper) < 3;
   const summary = distribution
     .map(({ category, percent }) => `${category} ${formatPercent(percent)}`)
     .join(', ');
@@ -85,7 +86,7 @@ export function CategoryDonut({ distribution, loading = false }: CategoryDonutPr
                     flexShrink: 0,
                     borderRadius: '3px',
                     bgcolor: color,
-                    boxShadow: OUTLINED_COLORS.has(color) ? `inset 0 0 0 1px ${INK}` : 'none',
+                    boxShadow: needsOutline(color) ? `inset 0 0 0 1px ${palette.ink.main}` : 'none',
                   }}
                 />
                 <Box component="span" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>

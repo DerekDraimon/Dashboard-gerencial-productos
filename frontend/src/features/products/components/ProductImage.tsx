@@ -23,7 +23,7 @@ export function ProductImage({ src, alt, size = 40, radius = 8, aspectRatio }: P
         aria-label={alt}
         sx={{
           ...frame,
-          bgcolor: '#ECEDE8',
+          bgcolor: 'surface.track',
           color: 'text.secondary',
           display: 'flex',
           alignItems: 'center',

@@ -18,7 +18,7 @@ export function EmptyState({
   return (
     <StateLayout
       icon={icon}
-      iconColors={{ bgcolor: '#E6EDE6', color: 'text.primary' }}
+      iconColors={{ bgcolor: 'tint.sage', color: 'text.primary' }}
       title={title}
       description={description}
       action={action}

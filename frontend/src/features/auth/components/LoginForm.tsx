@@ -7,6 +7,7 @@ import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import Stack from '@mui/material/Stack';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { ApiError } from '../../../shared/api/api-error';
@@ -70,14 +71,14 @@ export function LoginForm({ onSubmit, submitting, error }: LoginFormProps) {
         gap: 2.5,
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+      <Stack spacing={0.75}>
         <Typography component="h1" sx={{ fontSize: 24, fontWeight: 700 }}>
           Iniciar sesión
         </Typography>
         <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
           Ingresa con tu correo y contraseña.
         </Typography>
-      </Box>
+      </Stack>
       {message && <Alert severity="error">{message}</Alert>}
       <TextField
         {...emailField}

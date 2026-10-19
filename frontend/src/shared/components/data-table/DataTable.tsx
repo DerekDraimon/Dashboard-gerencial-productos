@@ -34,8 +34,6 @@ export interface DataTableProps<Row> {
   footer?: ReactNode;
 }
 
-const HEADER_BACKGROUND = '#FAFAF8';
-const ROW_DIVIDER = '#ECEDE8';
 const LOADING_ROWS = 5;
 
 const visuallyHidden: SxProps<Theme> = {
@@ -67,7 +65,8 @@ const headerCellSx: SxProps<Theme> = {
 const bodyCellSx: SxProps<Theme> = {
   ...cellSx,
   py: 1.5,
-  borderBottom: `1px solid ${ROW_DIVIDER}`,
+  borderBottom: '1px solid',
+  borderBottomColor: 'surface.track',
 };
 
 function defaultRowId(row: unknown, index: number): Key {
@@ -132,7 +131,7 @@ export function DataTable<Row>({
       <Box role="region" aria-label={ariaLabel} tabIndex={0} sx={{ overflowX: 'auto' }}>
         <Table aria-label={ariaLabel} aria-busy={loading} sx={{ minWidth }}>
           <TableHead>
-            <TableRow sx={{ backgroundColor: HEADER_BACKGROUND }}>
+            <TableRow sx={{ bgcolor: 'surface.header' }}>
               {columns.map((column) => (
                 <TableCell
                   key={column.id}

@@ -2,6 +2,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
+import Stack from '@mui/material/Stack';
 import { useEffect, useState } from 'react';
 import { Controller, useForm, type FieldPath } from 'react-hook-form';
 import { ApiError } from '../../../shared/api/api-error';
@@ -230,7 +231,7 @@ export function ProductFormDialog(props: ProductFormDialogProps) {
             gap: 3.5,
           }}
         >
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
+          <Stack spacing={2.25} sx={{ pt: 1 }}>
             <TextField label="Título" {...textField('title', requiredText('título', 120))} />
             <Box
               sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}
@@ -290,7 +291,7 @@ export function ProductFormDialog(props: ProductFormDialogProps) {
                 />
               )}
             />
-          </Box>
+          </Stack>
           <ProductFormPreview control={control} />
         </Box>
       )}
