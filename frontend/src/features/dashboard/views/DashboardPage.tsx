@@ -12,6 +12,9 @@ import { RecentProductsTable } from '../components/RecentProductsTable';
 import { TopPricesChart } from '../components/TopPricesChart';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
 
+// The card fills its cell, so every card in a row takes the height of the tallest one.
+const CELL_SX = { display: 'flex', minWidth: 0, '& > *': { flexGrow: 1, minWidth: 0 } };
+
 export function DashboardPage() {
   const { metrics, loading, error, reload, isEmpty } = useDashboardMetrics();
 
@@ -38,7 +41,7 @@ export function DashboardPage() {
         aria-busy={loading}
         spacing={2.5}
       >
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 4 }} sx={CELL_SX}>
           <KpiCard
             title="Total de productos"
             value={metrics.totalProducts}
@@ -48,7 +51,7 @@ export function DashboardPage() {
             loading={loading}
           />
         </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 4 }} sx={CELL_SX}>
           <KpiCard
             title="Valor total del inventario"
             value={formatMoney(metrics.inventoryValue)}
@@ -58,7 +61,7 @@ export function DashboardPage() {
             loading={loading}
           />
         </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 4 }} sx={CELL_SX}>
           <KpiCard
             title="Categoría líder"
             value={leaderCategory?.category ?? '—'}
@@ -75,10 +78,10 @@ export function DashboardPage() {
       </Grid>
 
       <Grid container spacing={2.5}>
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 6 }} sx={CELL_SX}>
           <CategoryDonut distribution={metrics.categoryDistribution} loading={loading} />
         </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 6 }} sx={CELL_SX}>
           <TopPricesChart products={metrics.topExpensive} loading={loading} />
         </Grid>
       </Grid>
