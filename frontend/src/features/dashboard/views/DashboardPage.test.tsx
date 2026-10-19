@@ -112,6 +112,24 @@ describe('DashboardPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('stretches every KPI and chart card to the height of its row', async () => {
+    renderPage();
+    await waitFor(() => expect(kpi('Total de productos')).toHaveAttribute('aria-busy', 'false'));
+
+    // jsdom has no layout: each card must grow inside a flex cell so a row's cards share one height.
+    const cards = [
+      kpi('Total de productos'),
+      kpi('Valor total del inventario'),
+      kpi('Categoría líder'),
+      screen.getByRole('region', { name: 'Distribución por categoría' }),
+      screen.getByRole('region', { name: 'Top 5 productos más caros' }),
+    ];
+    for (const card of cards) {
+      expect(card.parentElement).toHaveStyle({ display: 'flex' });
+      expect(card).toHaveStyle({ flexGrow: '1' });
+    }
+  });
+
   it('shows the three KPIs computed from every product', async () => {
     renderPage();
 
