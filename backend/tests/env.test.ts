@@ -102,6 +102,84 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...validSource, JWT_EXPIRES_IN: value })).toThrow(/JWT_EXPIRES_IN/);
   });
 
+  describe('MongoDB credentials', () => {
+    const atlas = 'mongodb+srv://cluster0.example.mongodb.net/dashboard?retryWrites=true';
+
+    it('inserts MONGODB_USER and MONGODB_PASSWORD into the URI, percent-encoded', () => {
+      const env = parseEnv({
+        ...validSource,
+        MONGODB_URI: atlas,
+        MONGODB_USER: 'app user',
+        MONGODB_PASSWORD: 'p@ss:w/rd#1',
+      });
+
+      expect(env.MONGODB_URI).toBe(
+        'mongodb+srv://app%20user:p%40ss%3Aw%2Frd%231@cluster0.example.mongodb.net/dashboard?retryWrites=true',
+      );
+      expect(env).not.toHaveProperty('MONGODB_USER');
+      expect(env).not.toHaveProperty('MONGODB_PASSWORD');
+    });
+
+    it('encodes $ and & in the password too', () => {
+      const env = parseEnv({ ...validSource, MONGODB_USER: 'app', MONGODB_PASSWORD: 'a$1b$&c' });
+
+      expect(env.MONGODB_URI).toBe('mongodb://app:a%241b%24%26c@localhost:27017/dashboard');
+    });
+
+    it('works with a plain mongodb:// URI too', () => {
+      const env = parseEnv({ ...validSource, MONGODB_USER: 'app', MONGODB_PASSWORD: 'secret' });
+
+      expect(env.MONGODB_URI).toBe('mongodb://app:secret@localhost:27017/dashboard');
+    });
+
+    it.each([
+      ['', ''],
+      ['  ', '  '],
+    ])('treats empty credentials (%j, %j) as not set', (user, password) => {
+      const env = parseEnv({ ...validSource, MONGODB_USER: user, MONGODB_PASSWORD: password });
+
+      expect(env.MONGODB_URI).toBe('mongodb://localhost:27017/dashboard');
+    });
+
+    it.each([
+      [{ MONGODB_USER: 'app' }, /MONGODB_PASSWORD: .*set together/],
+      [{ MONGODB_PASSWORD: 'secret' }, /MONGODB_USER: .*set together/],
+    ])('rejects only one of the two credentials (%j)', (credentials, message) => {
+      expect(() => parseEnv({ ...validSource, ...credentials })).toThrow(message);
+    });
+
+    it.each([
+      'mongodb+srv://<db_username>:<db_password>@cluster0.example.mongodb.net/',
+      'mongodb://other:pw@localhost:27017/dashboard',
+    ])('rejects credentials in both the URI and the variables (%s)', (uri) => {
+      expect(() =>
+        parseEnv({ ...validSource, MONGODB_URI: uri, MONGODB_USER: 'app', MONGODB_PASSWORD: 'x' }),
+      ).toThrow(/MONGODB_URI: .*already includes credentials/);
+    });
+
+    it('rejects credentials for a URI that is not mongodb:// or mongodb+srv://', () => {
+      expect(() =>
+        parseEnv({
+          ...validSource,
+          MONGODB_URI: 'localhost:27017/dashboard',
+          MONGODB_USER: 'app',
+          MONGODB_PASSWORD: 'x',
+        }),
+      ).toThrow(/MONGODB_URI: .*mongodb:\/\/ or mongodb\+srv:\/\//);
+    });
+
+    it('never echoes the password in a configuration error', () => {
+      expect(() =>
+        parseEnv({
+          ...validSource,
+          MONGODB_URI: 'nope',
+          MONGODB_USER: 'app',
+          MONGODB_PASSWORD: 'Sup3rSecret',
+        }),
+      ).toThrow(expect.objectContaining({ message: expect.not.stringContaining('Sup3rSecret') }));
+    });
+  });
+
   it('leaves TRUST_PROXY undefined when it is not set', () => {
     expect(parseEnv(validSource).TRUST_PROXY).toBeUndefined();
   });
