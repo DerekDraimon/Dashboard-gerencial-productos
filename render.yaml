@@ -25,7 +25,13 @@ services:
         value: '24'
       - key: NODE_ENV
         value: production
+      # Atlas URI without credentials, e.g. mongodb+srv://cluster0.xxxxx.mongodb.net/dashboard
       - key: MONGODB_URI
+        sync: false
+      # Database user and password; the API percent-encodes them into the URI.
+      - key: MONGODB_USER
+        sync: false
+      - key: MONGODB_PASSWORD
         sync: false
       - key: JWT_SECRET
         generateValue: true

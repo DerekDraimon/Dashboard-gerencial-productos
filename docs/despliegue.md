@@ -15,18 +15,20 @@ Render no ofrece MongoDB, así que la base vive en **MongoDB Atlas** (plan gratu
 
 1. Crea un cluster **M0** y un usuario de base de datos con contraseña.
 2. En **Network Access**, permite `0.0.0.0/0`: los servicios gratuitos de Render no tienen una IP fija.
-3. Copia la cadena de conexión (`mongodb+srv://…`) y agrega el nombre de la base antes de los parámetros, por ejemplo `…mongodb.net/dashboard?retryWrites=true&w=majority`.
+3. Copia la cadena de conexión, **quita** la parte `<db_username>:<db_password>@` y agrega el nombre de la base al final: `mongodb+srv://cluster0.xxxxx.mongodb.net/dashboard`. El usuario y la contraseña van aparte.
 
 ## 2. Blueprint en Render
 
 1. En Render, **New → Blueprint** y conecta este repositorio. Render lee `render.yaml`.
 2. Completa los valores que pide (solo se piden esta vez):
 
-   | Variable       | Servicio | Valor                                                                                       |
-   | -------------- | -------- | ------------------------------------------------------------------------------------------- |
-   | `MONGODB_URI`  | API      | La cadena de conexión de Atlas                                                              |
-   | `CORS_ORIGIN`  | API      | La URL de la web, por ejemplo `https://dashboard-gerencial-web.onrender.com`                |
-   | `VITE_API_URL` | Web      | La URL de la API más `/api`, por ejemplo `https://dashboard-gerencial-api.onrender.com/api` |
+   | Variable           | Servicio | Valor                                                                                       |
+   | ------------------ | -------- | ------------------------------------------------------------------------------------------- |
+   | `MONGODB_URI`      | API      | La cadena de Atlas sin usuario ni contraseña, con `/dashboard` al final                     |
+   | `MONGODB_USER`     | API      | El usuario de la base de datos                                                              |
+   | `MONGODB_PASSWORD` | API      | Su contraseña (la API la codifica, así que puede tener `@`, `:` o `/`)                      |
+   | `CORS_ORIGIN`      | API      | La URL de la web, por ejemplo `https://dashboard-gerencial-web.onrender.com`                |
+   | `VITE_API_URL`     | Web      | La URL de la API más `/api`, por ejemplo `https://dashboard-gerencial-api.onrender.com/api` |
 
 3. Aplica el Blueprint. `JWT_SECRET` se genera solo y `TRUST_PROXY=1` ya viene configurado.
 
@@ -38,13 +40,15 @@ Render no ofrece MongoDB, así que la base vive en **MongoDB Atlas** (plan gratu
 El seed se ejecuta una vez desde tu máquina contra Atlas. La variable de entorno tiene prioridad sobre `backend/.env`, y las contraseñas de los usuarios de prueba se toman de ese archivo:
 
 ```bash
-MONGODB_URI="<cadena de Atlas>" npm run seed
+MONGODB_URI="<cadena de Atlas>" MONGODB_USER="<usuario>" MONGODB_PASSWORD="<contraseña>" npm run seed
 ```
 
 En PowerShell:
 
 ```powershell
-$env:MONGODB_URI = "<cadena de Atlas>"; npm run seed; Remove-Item Env:MONGODB_URI
+$env:MONGODB_URI = "<cadena de Atlas>"; $env:MONGODB_USER = "<usuario>"; $env:MONGODB_PASSWORD = "<contraseña>"
+npm run seed
+Remove-Item Env:MONGODB_URI, Env:MONGODB_USER, Env:MONGODB_PASSWORD
 ```
 
 ## Cómo se comporta

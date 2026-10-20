@@ -66,6 +66,15 @@ const trustProxySchema = z
 
 const JWT_EXPIRES_IN_PATTERN = /^[1-9]\d*[smhd]?$/;
 
+/** Empty or blank values count as not set, as `KEY=` in a .env file usually means "nothing here". */
+const optionalSecret = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().optional(),
+);
+
+const MONGODB_SCHEME = /^(mongodb(?:\+srv)?:\/\/)(.*)$/;
+const CREDENTIALS_ERROR = 'MONGODB_USER and MONGODB_PASSWORD must be set together';
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce
@@ -75,6 +84,8 @@ const envSchema = z.object({
     .max(65535, 'PORT must be between 1 and 65535')
     .default(4000),
   MONGODB_URI: requiredString('MONGODB_URI'),
+  MONGODB_USER: optionalSecret,
+  MONGODB_PASSWORD: optionalSecret,
   JWT_SECRET: requiredString('JWT_SECRET').min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z
     .string()
@@ -95,12 +106,57 @@ const envSchema = z.object({
   ...loginRateLimitEnvSchema.shape,
 });
 
-export type Env = z.infer<typeof envSchema>;
+/**
+ * Hosts like Render keep the database user and password apart from the URI. They are percent-encoded
+ * into it here, so a password with `@`, `:` or `/` cannot break the connection string.
+ * Error messages never include the values themselves.
+ */
+const envWithDatabaseCredentials = envSchema
+  .superRefine(({ MONGODB_URI, MONGODB_USER, MONGODB_PASSWORD }, ctx) => {
+    if (MONGODB_USER === undefined && MONGODB_PASSWORD === undefined) return;
+    if (MONGODB_USER === undefined || MONGODB_PASSWORD === undefined) {
+      const missing = MONGODB_USER === undefined ? 'MONGODB_USER' : 'MONGODB_PASSWORD';
+      ctx.addIssue({ code: 'custom', path: [missing], message: CREDENTIALS_ERROR });
+      return;
+    }
+    const match = MONGODB_SCHEME.exec(MONGODB_URI);
+    if (!match) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MONGODB_URI'],
+        message:
+          'must start with mongodb:// or mongodb+srv:// to add MONGODB_USER and MONGODB_PASSWORD',
+      });
+      return;
+    }
+    const [authority = ''] = (match[2] ?? '').split(/[/?]/, 1);
+    if (authority.includes('@')) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MONGODB_URI'],
+        message:
+          'already includes credentials (user:password@); remove them, or the <db_username>:<db_password> placeholders, when MONGODB_USER and MONGODB_PASSWORD are set',
+      });
+    }
+  })
+  .transform(({ MONGODB_USER, MONGODB_PASSWORD, ...env }) => {
+    if (MONGODB_USER === undefined || MONGODB_PASSWORD === undefined) return env;
+    const credentials = `${encodeURIComponent(MONGODB_USER)}:${encodeURIComponent(MONGODB_PASSWORD)}@`;
+    return {
+      ...env,
+      MONGODB_URI: env.MONGODB_URI.replace(
+        MONGODB_SCHEME,
+        (_, scheme: string, rest: string) => `${scheme}${credentials}${rest}`,
+      ),
+    };
+  });
+
+export type Env = z.infer<typeof envWithDatabaseCredentials>;
 
 type EnvSource = Record<string, string | undefined>;
 
 export function parseEnv(source: EnvSource): Env {
-  const result = envSchema.safeParse(source);
+  const result = envWithDatabaseCredentials.safeParse(source);
   if (result.success) {
     return result.data;
   }

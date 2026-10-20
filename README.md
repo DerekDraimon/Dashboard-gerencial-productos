@@ -98,19 +98,21 @@ La plantilla `backend/.env.example` ya trae valores que funcionan en local: **no
 
 <br>
 
-| Variable                     | Obligatoria | Por defecto             | Descripción                                                                            |
-| ---------------------------- | :---------: | ----------------------- | -------------------------------------------------------------------------------------- |
-| `MONGODB_URI`                |     Sí      | —                       | Conexión a MongoDB (`mongodb://localhost:27017/dashboard` con Docker)                  |
-| `JWT_SECRET`                 |     Sí      | —                       | Secreto para firmar los tokens (mínimo 32 caracteres)                                  |
-| `JWT_EXPIRES_IN`             |     No      | `1d`                    | Vigencia del token: segundos (`3600`) o con unidad (`15m`, `12h`, `1d`)                |
-| `PORT`                       |     No      | `4000`                  | Puerto de la API                                                                       |
-| `CORS_ORIGIN`                |     No      | `http://localhost:5173` | Origen permitido del frontend                                                          |
-| `NODE_ENV`                   |     No      | `development`           | `development`, `test` o `production`                                                   |
-| `LOGIN_RATE_LIMIT_WINDOW_MS` |     No      | `900000`                | Ventana del límite de intentos de login, en milisegundos (15 minutos)                  |
-| `LOGIN_RATE_LIMIT_MAX`       |     No      | `10`                    | Intentos de login permitidos por IP en cada ventana                                    |
-| `SEED_ADMIN_PASSWORD`        |  Solo seed  | —                       | Contraseña del usuario `ADMIN` del seed (mínimo 8 caracteres)                          |
-| `SEED_USER_PASSWORD`         |  Solo seed  | —                       | Contraseña del usuario `USER` del seed (mínimo 8 caracteres)                           |
-| `TRUST_PROXY`                |     No      | sin definir             | Solo detrás de un proxy inverso: número de saltos (`1`) o lista de subredes. Ver abajo |
+| Variable                     | Obligatoria | Por defecto             | Descripción                                                                                             |
+| ---------------------------- | :---------: | ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| `MONGODB_URI`                |     Sí      | —                       | Conexión a MongoDB (`mongodb://localhost:27017/dashboard` con Docker)                                   |
+| `MONGODB_USER`               |     No      | —                       | Usuario de la base; se inserta en `MONGODB_URI` (útil en Atlas o Render)                                |
+| `MONGODB_PASSWORD`           |     No      | —                       | Contraseña de ese usuario; se codifica, así que puede tener `@`, `:` o `/`. Va junto con `MONGODB_USER` |
+| `JWT_SECRET`                 |     Sí      | —                       | Secreto para firmar los tokens (mínimo 32 caracteres)                                                   |
+| `JWT_EXPIRES_IN`             |     No      | `1d`                    | Vigencia del token: segundos (`3600`) o con unidad (`15m`, `12h`, `1d`)                                 |
+| `PORT`                       |     No      | `4000`                  | Puerto de la API                                                                                        |
+| `CORS_ORIGIN`                |     No      | `http://localhost:5173` | Origen permitido del frontend                                                                           |
+| `NODE_ENV`                   |     No      | `development`           | `development`, `test` o `production`                                                                    |
+| `LOGIN_RATE_LIMIT_WINDOW_MS` |     No      | `900000`                | Ventana del límite de intentos de login, en milisegundos (15 minutos)                                   |
+| `LOGIN_RATE_LIMIT_MAX`       |     No      | `10`                    | Intentos de login permitidos por IP en cada ventana                                                     |
+| `SEED_ADMIN_PASSWORD`        |  Solo seed  | —                       | Contraseña del usuario `ADMIN` del seed (mínimo 8 caracteres)                                           |
+| `SEED_USER_PASSWORD`         |  Solo seed  | —                       | Contraseña del usuario `USER` del seed (mínimo 8 caracteres)                                            |
+| `TRUST_PROXY`                |     No      | sin definir             | Solo detrás de un proxy inverso: número de saltos (`1`) o lista de subredes. Ver abajo                  |
 
 `TRUST_PROXY` hace que `req.ip` y el límite de login usen la IP real de `X-Forwarded-For`. Vacío equivale a no definirla. Prefiere `TRUST_PROXY=1` o una lista de subredes (`loopback, 10.0.0.0/8`), y **nunca uses `true` en producción**: confiaría en cualquier `X-Forwarded-For`, y un cliente podría falsear su IP para esquivar el límite.
 
