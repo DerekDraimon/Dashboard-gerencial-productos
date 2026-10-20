@@ -1,0 +1,62 @@
+# Render Blueprint: the API as a Node web service and the web app as a static site.
+# MongoDB is not hosted on Render: use a MongoDB Atlas cluster and paste its URI when prompted.
+# Values marked `sync: false` are asked once, when the Blueprint is created in the Render Dashboard.
+
+services:
+  - type: web
+    name: dashboard-gerencial-api
+    runtime: node
+    plan: free
+    region: oregon
+    # Dev dependencies (TypeScript) are needed to compile, even with NODE_ENV=production.
+    buildCommand: npm ci --include=dev && npm run build -w backend
+    startCommand: npm start -w backend
+    # Answers 503 while MongoDB is unreachable, so a deploy with a wrong URI never goes live.
+    healthCheckPath: /api/health
+    # Deploy only after the GitHub Actions checks pass on main.
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - backend/**
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      # Public URL of the static site below, e.g. https://dashboard-gerencial-web.onrender.com
+      - key: CORS_ORIGIN
+        sync: false
+      # Render puts one proxy in front of the service: the login rate limit must see the client IP.
+      - key: TRUST_PROXY
+        value: '1'
+
+  - type: web
+    name: dashboard-gerencial-web
+    runtime: static
+    buildCommand: npm ci --include=dev && npm run build -w frontend
+    staticPublishPath: frontend/dist
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - frontend/**
+        - package.json
+        - package-lock.json
+    # Client-side routes (/inventory, /users…) must load the app instead of a 404.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      # Public URL of the API above plus /api, e.g. https://dashboard-gerencial-api.onrender.com/api
+      - key: VITE_API_URL
+        sync: false

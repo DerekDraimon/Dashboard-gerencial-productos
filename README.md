@@ -178,9 +178,10 @@ npm run test:api
 
 ## 📚 Más documentación
 
-| Documento                               | Contenido                                                            |
-| --------------------------------------- | -------------------------------------------------------------------- |
-| 📡 [Referencia de la API](docs/api.md)  | Endpoints, permisos por rol, reglas de validación y códigos de error |
-| 🏗️ [Arquitectura](docs/arquitectura.md) | Stack, estructura de carpetas, decisiones técnicas y mejoras futuras |
+| Documento                                     | Contenido                                                                |
+| --------------------------------------------- | ------------------------------------------------------------------------ |
+| 📡 [Referencia de la API](docs/api.md)        | Endpoints, permisos por rol, reglas de validación y códigos de error     |
+| 🏗️ [Arquitectura](docs/arquitectura.md)       | Stack, estructura de carpetas, decisiones técnicas y mejoras futuras     |
+| ☁️ [Despliegue en Render](docs/despliegue.md) | Blueprint (`render.yaml`), MongoDB Atlas y datos de prueba en producción |
 
 **En resumen:** el backend es un monolito modular (cada módulo con `routes` → `controller` → `service` → `model`), y el frontend está organizado por features con el patrón contenedor/presentación. Las métricas del dashboard son funciones puras con `reduce`, `map` y `filter`, y el dinero se calcula con decimal.js.
