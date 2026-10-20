@@ -11,11 +11,23 @@ Inventario de una tienda con métricas de negocio, autenticación por roles y ad
 ![MongoDB 7](https://img.shields.io/badge/MongoDB-7-47A248?logo=mongodb&logoColor=white)
 ![Express 5](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
 
-[Puesta en marcha](#-puesta-en-marcha) · [Credenciales](#-credenciales-de-prueba) · [Scripts](#-scripts) · [Postman](#-probar-con-postman) · [API](docs/api.md) · [Arquitectura](docs/arquitectura.md)
+[Demo en línea](#-demo-en-línea) · [Puesta en marcha](#-puesta-en-marcha) · [Credenciales](#-credenciales-de-prueba) · [Scripts](#-scripts) · [Postman](#-probar-con-postman) · [API](docs/api.md) · [Arquitectura](docs/arquitectura.md)
 
 </div>
 
 ---
+
+## 🌐 Demo en línea
+
+Desplegada en Render. Entra con las [credenciales de prueba](#-credenciales-de-prueba):
+
+| Servicio | URL                                                                                                 |
+| -------- | --------------------------------------------------------------------------------------------------- |
+| 🖥️ Web   | [dashboard-gerencial-web.onrender.com](https://dashboard-gerencial-web.onrender.com)                |
+| 🔌 API   | [dashboard-gerencial-api.onrender.com/api](https://dashboard-gerencial-api.onrender.com/api/health) |
+
+> [!NOTE]
+> La API usa el plan gratuito y se duerme tras unos 15 minutos sin uso: la primera petición puede tardar cerca de un minuto. Para probarla con Postman, cambia `baseUrl` del entorno a `https://dashboard-gerencial-api.onrender.com/api`. Cómo se despliega: [docs/despliegue.md](docs/despliegue.md).
 
 ## ✅ Requisitos previos
 
