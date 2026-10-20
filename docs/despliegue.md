@@ -11,6 +11,8 @@ El archivo [`render.yaml`](../render.yaml) es un **Blueprint** de Render que cre
 
 Render no ofrece MongoDB, así que la base vive en **MongoDB Atlas** (plan gratuito M0).
 
+En producción: web en <https://dashboard-gerencial-web.onrender.com> y API en <https://dashboard-gerencial-api.onrender.com/api>.
+
 ## 1. MongoDB Atlas
 
 1. Crea un cluster **M0** y un usuario de base de datos con contraseña.
